@@ -45,6 +45,8 @@ const { createModelStore } = require('./analysis/modelStore.cjs');
 const { resolveLinuxPasswordStore } = require('./linuxPasswordStore.cjs');
 const { createTranscodeService } = require('./transcode/service.cjs');
 const { TRANSCODE_PROTOCOL_SCHEME } = require('./transcode/protocol.cjs');
+const { createYoutubeService } = require('./youtube/service.cjs');
+const { YOUTUBE_PROTOCOL_SCHEME } = require('./youtube/protocol.cjs');
 const { sanitizeDualTheme: sanitizeGeneratedDualTheme } = require('../shared/themeSanitizer.cjs');
 const {
   detectOpenAICompatibleProvider,
@@ -87,6 +89,16 @@ protocol.registerSchemesAsPrivileged([
   },
   {
     scheme: TRANSCODE_PROTOCOL_SCHEME,
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true,
+    },
+  },
+  {
+    scheme: YOUTUBE_PROTOCOL_SCHEME,
     privileges: {
       standard: true,
       secure: true,
@@ -188,6 +200,7 @@ const transcodeService = createTranscodeService({
   net: electronNet,
   onCacheWrite: pruneMediaCache,
 });
+const youtubeService = createYoutubeService({ app, protocol });
 // KuGou credentials stay inside the main process and are encrypted lazily after Electron is ready.
 // The bridge refuses Linux's plaintext `basic_text` fallback and degrades to an in-memory session.
 const kugouApiBridge = createKugouApiBridge({ store, safeStorage });
@@ -5362,6 +5375,12 @@ app.whenReady().then(async () => {
   setupFileSystemAccessPermissionHandlers();
   setupCorsBypassHandlers();
   localCoverAssetStore.registerProtocolHandler(protocol, electronNet);
+  // YouTube import is optional; a failed protocol registration must not block window creation.
+  try {
+    youtubeService.registerProtocol();
+  } catch (error) {
+    console.warn('[YouTube] Protocol registration failed; YouTube playback is unavailable', error);
+  }
   // Transcode fallback is an optional degradation path; a failure preparing it must never keep
   // the rest of this handler, createWindow() included, from running.
   try {
@@ -6068,6 +6087,14 @@ ipcMain.handle('transcode-fallback-request', async (_event, request) => {
 
 ipcMain.handle('transcode-fallback-cancel', (_event, requestId) => {
   return transcodeService.cancel(requestId);
+});
+
+ipcMain.handle('youtube:import', (event, url) => {
+  return youtubeService.importTrack(url, {
+    onProgress: progress => {
+      if (!event.sender.isDestroyed()) event.sender.send('youtube:import-progress', progress);
+    },
+  });
 });
 
 ipcMain.handle('get-cover-cache', async (event, cacheKey) => {

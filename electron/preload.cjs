@@ -117,6 +117,14 @@ contextBridge.exposeInMainWorld('electron', {
     clearAudioCache: () => ipcRenderer.invoke('clear-audio-cache'),
     requestTranscodeFallback: (request) => ipcRenderer.invoke('transcode-fallback-request', request),
     cancelTranscodeFallback: (requestId) => ipcRenderer.invoke('transcode-fallback-cancel', requestId),
+    youtube: {
+        importTrack: (url) => ipcRenderer.invoke('youtube:import', url),
+        onImportProgress: (callback) => {
+            const listener = (_event, progress) => callback(progress);
+            ipcRenderer.on('youtube:import-progress', listener);
+            return () => ipcRenderer.removeListener('youtube:import-progress', listener);
+        },
+    },
     getCoverCache: (cacheKey) => ipcRenderer.invoke('get-cover-cache', cacheKey),
     saveCoverCache: (cacheKey, data, mimeType) => ipcRenderer.invoke('save-cover-cache', cacheKey, data, mimeType),
     removeCoverCache: (cacheKey) => ipcRenderer.invoke('remove-cover-cache', cacheKey),
