@@ -170,6 +170,8 @@ export type CommandPalettePlaybackContext = {
     openAudioEqualizer: () => void;
     applyAudioSoundPreset: (modeId: AudioEqualizerModeId) => void;
     runAutoMatchBestLyric: () => Promise<boolean>;
+    /** Imports the audio behind a YouTube link (desktop only) and plays it; false when it could not. */
+    playYoutubeUrl: (url: string) => Promise<boolean>;
 };
 
 export type CommandPaletteNavigationContext = {

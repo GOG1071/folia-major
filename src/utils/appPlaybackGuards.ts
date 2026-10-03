@@ -4,7 +4,7 @@ import type { NavidromeSong } from '../types/navidrome';
 import type { OnlineProviderId, PlaybackSourceRef } from '../types/onlineMusic';
 
 // Runtime guards for the unified playback song model.
-export type PlaybackSongSource = OnlineProviderId | 'local' | 'navidrome' | 'stage';
+export type PlaybackSongSource = OnlineProviderId | 'local' | 'navidrome' | 'youtube' | 'stage';
 
 export const isNavidromePlaybackSong = (song: SongResult | null | undefined): song is NavidromeSong => {
     return Boolean(song && (song as any).isNavidrome === true);
@@ -45,6 +45,11 @@ export const isLocalPlaybackSong = (
 export const isStagePlaybackSong = (song: SongResult | null | undefined): boolean => {
     return Boolean(song && (song.sourceRef?.kind === 'stage' || (song as any).isStage === true));
 };
+
+/** True for a track imported from a YouTube link (played from the desktop app's yt-dlp cache). */
+export const isYoutubePlaybackSong = (song: SongResult | null | undefined): boolean => (
+    Boolean(song && song.sourceRef?.kind === 'youtube')
+);
 
 export const getPlaybackSourceRef = (song: SongResult): PlaybackSourceRef => {
     if (song.sourceRef) return song.sourceRef;

@@ -9,6 +9,7 @@ import {
 } from '../services/playbackAdapters';
 import { omni } from '../services/onlineMusic/omni';
 import { isLocalPlaybackSong, isNavidromePlaybackSong } from '../utils/appPlaybackGuards';
+import { tryHandleYoutubeUrlQuery } from '../services/youtube/youtubeUrlIntake';
 
 const LAST_HOME_VIEW_TAB_KEY = 'last_home_view_tab';
 const DEFAULT_SEARCH_LIMIT = 30;
@@ -255,6 +256,11 @@ export const useSearchNavigationStore = create<SearchNavigationState>((set, get)
     submitSearch: async ({ query, sourceTab, deps, returnView = 'home' }) => {
         const trimmedQuery = (query ?? get().searchQuery).trim();
         if (!trimmedQuery) {
+            return false;
+        }
+        // A pasted YouTube link plays instead of searching. Returning false keeps every caller
+        // (overlay, home box, palette) from navigating to a results page that does not exist.
+        if (tryHandleYoutubeUrlQuery(trimmedQuery)) {
             return false;
         }
 

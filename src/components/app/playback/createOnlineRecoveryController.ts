@@ -6,6 +6,7 @@ import {
     getPlaybackSongKey,
     isLocalPlaybackSong,
     isNavidromePlaybackSong,
+    isYoutubePlaybackSong,
     isSamePlaybackSong,
     isStagePlaybackSong,
     replacePlaybackSongInQueue,
@@ -72,7 +73,7 @@ export const createOnlineRecoveryController = ({
     onlineAudioUrlRefreshBufferMs,
 }: RecoveryControllerParams) => {
     const shouldRefreshCurrentOnlineAudioSource = () => {
-        if (!currentSong || isLocalPlaybackSong(currentSong) || isNavidromePlaybackSong(currentSong) || isStagePlaybackSong(currentSong)) {
+        if (!currentSong || isLocalPlaybackSong(currentSong) || isNavidromePlaybackSong(currentSong) || isYoutubePlaybackSong(currentSong) || isStagePlaybackSong(currentSong)) {
             return false;
         }
 
@@ -100,7 +101,7 @@ export const createOnlineRecoveryController = ({
         const song = currentSong;
         const audioElement = audioRef.current;
 
-        if (!song || !audioElement || isLocalPlaybackSong(song) || isNavidromePlaybackSong(song) || isStagePlaybackSong(song)) {
+        if (!song || !audioElement || isLocalPlaybackSong(song) || isNavidromePlaybackSong(song) || isYoutubePlaybackSong(song) || isStagePlaybackSong(song)) {
             return false;
         }
 

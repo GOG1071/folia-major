@@ -17,6 +17,7 @@ import {
     isLocalPlaybackSong,
     isNavidromePlaybackSong,
     isSamePlaybackSong,
+    isYoutubePlaybackSong,
     replacePlaybackSongInQueue,
 } from '../../../utils/appPlaybackGuards';
 import { getLocalCoverAssetUrl } from '../../../services/localCoverAssetUrl';
@@ -29,6 +30,8 @@ import { omni } from '../../../services/onlineMusic/omni';
 import { getCachedSongCoverUrl, getSongCacheWithLegacyMigration } from '../../../services/onlineMusic/resourceCache';
 import { getSongCoverUrl } from '../../../services/onlineMusic/songMetadata';
 import { useOnlineProviderAccountStore } from '../../../stores/useOnlineProviderAccountStore';
+import { isYoutubeAudioAvailable } from '../../../services/youtube/youtubeAudioAvailability';
+import { resolveYoutubeLyrics } from '../../../services/youtube/youtubeLyricsResolver';
 import { setStatusMessage as setStatusMsg } from '../../../stores/useStatusMessageStore';
 import { setActiveLocalLyricsSource, setAudioSrc, setCachedCoverUrl, setCurrentSong } from '../../../stores/usePlaybackStore';
 import { useLyricSettingsStore } from '../../../stores/useLyricSettingsStore';
@@ -126,6 +129,21 @@ export const restorePlaybackSourceForSong = async (
         } as SongResult;
         setCurrentSong(restoredSong);
         void persistLastPlaybackCache?.(restoredSong, queue && queue.length > 0 ? queue : [restoredSong]);
+        return true;
+    }
+
+    if (isYoutubePlaybackSong(song)) {
+        const audioUrl = (song as SongResult & { youtubeAudioUrl?: string }).youtubeAudioUrl;
+        // The downloaded file lives in the app's own cache; if it is gone, say so rather than re-downloading at startup.
+        if (!await isYoutubeAudioAvailable(audioUrl)) {
+            setStatusMsg({ type: 'info', text: i18n.t('status.youtubeAudioMissing') });
+            return false;
+        }
+        currentOnlineAudioUrlFetchedAtRef.current = null;
+        setAudioSrc(audioUrl ?? null);
+        if (song.album.coverUrl) setCachedCoverUrl(song.album.coverUrl);
+        const outcome = await resolveYoutubeLyrics(song.sourceRef!.mediaId, song);
+        if (outcome.status === 'matched') setLyrics(outcome.lyrics);
         return true;
     }
 

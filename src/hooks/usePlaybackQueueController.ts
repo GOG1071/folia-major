@@ -19,6 +19,7 @@ import {
     getPlaybackSongKey,
     isLocalPlaybackSong,
     isNavidromePlaybackSong,
+    isYoutubePlaybackSong,
     isSamePlaybackSong,
     replacePlaybackSongInQueue,
     resolveNavidromePlaybackCarrier,
@@ -39,6 +40,7 @@ import { useAudioSettingsStore } from '../stores/useAudioSettingsStore';
 import { useSearchNavigationStore } from '../stores/useSearchNavigationStore';
 import { showLatticeFmNotice, usePlaybackEntryViewStore } from '../stores/usePlaybackEntryViewStore';
 import { useStableActionSurface } from './useStableCallbacks';
+import { useYoutubeUrlPlayback } from './useYoutubeUrlPlayback';
 import { hasBeforePlayHook, runBeforePlayHook } from '../services/hostExtensionHooks';
 
 // src/hooks/usePlaybackQueueController.ts
@@ -91,6 +93,11 @@ type UsePlaybackQueueControllerParams = {
     onPlayNavidromeSong: (
         navidromeSong: NavidromeSong,
         queue?: NavidromeSong[],
+        options?: PlaybackNavigationOptions,
+    ) => Promise<void>;
+    onPlayYoutubeSong: (
+        youtubeSong: UnifiedSong,
+        queue?: SongResult[],
         options?: PlaybackNavigationOptions,
     ) => Promise<void>;
     onAddLocalSongToQueue: (localSong: LocalSong) => void;
@@ -157,6 +164,7 @@ export function usePlaybackQueueController({
     interruptStagePlaybackForMainTransition,
     onPlayLocalSong,
     onPlayNavidromeSong,
+    onPlayYoutubeSong,
     onAddLocalSongToQueue,
     onAddNavidromeSongsToQueue,
     searchDeps,
@@ -284,7 +292,7 @@ export function usePlaybackQueueController({
     }, [pendingUnavailableSkipIntervalRef, pendingUnavailableSkipTimerRef]);
 
     const isQueueSongPlayable = useCallback((queuedSong: SongResult) => {
-        if (isLocalPlaybackSong(queuedSong) || isNavidromePlaybackSong(queuedSong)) {
+        if (isLocalPlaybackSong(queuedSong) || isNavidromePlaybackSong(queuedSong) || isYoutubePlaybackSong(queuedSong)) {
             return true;
         }
         return !isSongUnavailable(queuedSong) && omni.canPlaySong(queuedSong);
@@ -328,7 +336,7 @@ export function usePlaybackQueueController({
     ) => {
         const normalizedQueue = queue.length > 0 ? queue : [originalSong];
         const replacedQueue = normalizedQueue.flatMap((queuedSong) => {
-            if (isLocalPlaybackSong(queuedSong) || isNavidromePlaybackSong(queuedSong)) {
+            if (isLocalPlaybackSong(queuedSong) || isNavidromePlaybackSong(queuedSong) || isYoutubePlaybackSong(queuedSong)) {
                 return [queuedSong];
             }
 
@@ -542,6 +550,14 @@ export function usePlaybackQueueController({
             return;
         }
 
+        if (isYoutubePlaybackSong(song)) {
+            await onPlayYoutubeSong(song as UnifiedSong, queueContext, {
+                shouldNavigateToPlayer,
+                unifiedQueue: newQueue,
+            });
+            return;
+        }
+
         prefetched = getPrefetchedData(song, audioQuality);
 
         const hasImmediatePrefetchedAudio = Boolean(
@@ -715,6 +731,7 @@ export function usePlaybackQueueController({
         navigateToPlaybackView,
         onPlayLocalSong,
         onPlayNavidromeSong,
+        onPlayYoutubeSong,
         pendingResumeTimeRef,
         persistLastPlaybackCache,
         playQueue,
@@ -762,6 +779,8 @@ export function usePlaybackQueueController({
 
         void playSong(song, nextQueue, false);
     }, [playQueue, playSong]);
+
+    const { playYoutubeUrl } = useYoutubeUrlPlayback({ playQueueSong: handleQueueAddAndPlay });
 
     const handleSearchOverlaySubmit = useCallback(async (requestedSource?: SearchSource) => {
         const trimmedQuery = searchQuery.trim();
@@ -1319,6 +1338,7 @@ export function usePlaybackQueueController({
         playSong,
         playOnlineQueueFromStart,
         handleQueueAddAndPlay,
+        playYoutubeUrl,
         handleSearchOverlaySubmit,
         handleSearchLoadMore,
         handleSearchResultPlay,

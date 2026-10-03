@@ -88,6 +88,7 @@ import { useLibraryPlaybackController } from './hooks/useLibraryPlaybackControll
 import { useNavidromeScrobbleReporter } from './hooks/useNavidromeScrobbleReporter';
 import { useNeteaseScrobbleReporter } from './hooks/useNeteaseScrobbleReporter';
 import { usePlaybackQueueController } from './hooks/usePlaybackQueueController';
+import { useYoutubePlayback } from './hooks/useYoutubePlayback';
 import { usePlaybackTransportController } from './hooks/usePlaybackTransportController';
 import { useLocalLibraryCatalog } from './hooks/useLocalLibraryCatalog';
 import { usePlaybackVisualizerBridge } from './hooks/usePlaybackVisualizerBridge';
@@ -104,7 +105,7 @@ import { useCollectionNavigationStore } from './stores/useCollectionNavigationSt
 import { useOnlineProviderAccountStore } from './stores/useOnlineProviderAccountStore';
 import { useShallow } from 'zustand/react/shallow';
 import { clampMediaVolume, toSafeRemoteUrl } from './utils/appPlaybackHelpers';
-import { getOnlineProviderIdForSong, getPlaybackSongKey, isLocalPlaybackSong, isNavidromePlaybackSong, isStagePlaybackSong } from './utils/appPlaybackGuards';
+import { getOnlineProviderIdForSong, getPlaybackSongKey, isLocalPlaybackSong, isNavidromePlaybackSong, isStagePlaybackSong, isYoutubePlaybackSong } from './utils/appPlaybackGuards';
 import { readLyricOffset, writeLyricOffset } from './utils/lyrics/lyricOffsetMemory';
 import { FALLBACK_AI_DUAL_THEME } from './services/themeSanitizer';
 import { BASE_DUAL_THEME, DAYLIGHT_THEME, DEFAULT_THEME } from './services/baseThemes';
@@ -972,6 +973,19 @@ export default function App() {
         currentOnlineAudioUrlFetchedAtRef,
     });
 
+    const { onPlayYoutubeSong } = useYoutubePlayback({
+        setLyrics,
+        setIsLyricsLoading,
+        navigateToPlaybackView,
+        persistLastPlaybackCache,
+        restoreCachedThemeForSong,
+        interruptStagePlaybackForMainTransition,
+        blobUrlRef,
+        shouldAutoPlayRef: shouldAutoPlay,
+        currentSongRef,
+        currentOnlineAudioUrlFetchedAtRef,
+    });
+
     useSessionRestoreController({
         userId: user?.id,
         blobUrlRef,
@@ -1041,6 +1055,7 @@ export default function App() {
         playSong,
         playOnlineQueueFromStart,
         handleQueueAddAndPlay,
+        playYoutubeUrl,
         handleSearchOverlaySubmit,
         handleSearchLoadMore,
         handleSearchResultPlay,
@@ -1067,6 +1082,7 @@ export default function App() {
         interruptStagePlaybackForMainTransition,
         onPlayLocalSong,
         onPlayNavidromeSong,
+        onPlayYoutubeSong,
         onAddLocalSongToQueue: handleLocalQueueAdd,
         onAddNavidromeSongsToQueue: addNavidromeSongsToQueue,
         searchDeps: {
@@ -1774,6 +1790,7 @@ export default function App() {
         isPersonalFmModeSupported,
         setPersonalFmSelection,
         runAutoMatchBestLyric: handleAutoMatchBestLyricForCurrentSong,
+        playYoutubeUrl,
         toggleSongLike: handleLike,
         isSongLiked: resolveSongLiked(displaySong, { isLocalSongLiked, starredNavidromeSongIds, likedSongIds }),
 
@@ -2614,6 +2631,7 @@ export default function App() {
                     currentSong &&
                     !isLocalPlaybackSong(currentSong) &&
                     !isNavidromePlaybackSong(currentSong) &&
+                    !isYoutubePlaybackSong(currentSong) &&
                     !isStagePlaybackSong(currentSong) &&
                     failedSrc &&
                     !failedSrc.startsWith('blob:')

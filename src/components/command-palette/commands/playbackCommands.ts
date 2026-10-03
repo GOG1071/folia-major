@@ -1,5 +1,5 @@
 import { PlayerState } from '../../../types';
-import { Heart, ListX, Pause, Play, Repeat, Shuffle, SkipBack, SkipForward, Star, VolumeX } from 'lucide-react';
+import { Heart, Link, ListX, Pause, Play, Repeat, Shuffle, SkipBack, SkipForward, Star, VolumeX } from 'lucide-react';
 import { executeModeCommand } from './executeModeCommand';
 import { queueCommand } from './queueCommand';
 import { volumeCommand } from './volumeCommand';
@@ -123,6 +123,22 @@ export const playbackCommands: CommandPaletteCommand[] = [
             }
             context.playback.clearQueue();
             return true;
+        },
+    },
+    {
+        id: 'playback-youtube-url',
+        group: 'playback',
+        // The importer is the desktop app's bundled yt-dlp; the web build has nothing to download with.
+        platform: ['electron'],
+        title: 'Play YouTube link',
+        description: 'Download a YouTube video\'s audio with yt-dlp and play it (desktop app)',
+        keywords: ['youtube', 'yt', 'url', 'link', 'yt-dlp', 'ytdlp', 'paste link', 'YouTube 链接', '油管'],
+        icon: Link,
+        requiresInput: true,
+        placeholder: () => 'youtube https://www.youtube.com/watch?v=…',
+        execute: (input, context) => {
+            const url = input.trim();
+            return url ? context.playback.playYoutubeUrl(url) : false;
         },
     },
     {

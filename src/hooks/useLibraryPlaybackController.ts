@@ -1372,6 +1372,10 @@ export function useLibraryPlaybackController({
         }
 
         const sourceRef = getPlaybackSourceRef(currentSong);
+        if (sourceRef.kind === 'youtube') {
+            setStatusMsg({ type: 'info', text: t('status.youtubeLikeUnavailable') });
+            return;
+        }
         if (sourceRef.kind !== 'online') {
             setStatusMsg({ type: 'error', text: t('status.likeFailed') });
             return;

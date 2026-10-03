@@ -1399,6 +1399,8 @@ export interface UnifiedSong extends SongResult {
   localRef?: import('./types/localLibrary').LocalSongReference;
   isNavidrome?: boolean;
   navidromeData?: any;
+  /** `folia-youtube://audio/<id>` for a track imported from a YouTube link (sourceRef.kind === 'youtube'). */
+  youtubeAudioUrl?: string;
 }
 
 export type ReplayGainMode = 'off' | 'track' | 'album';

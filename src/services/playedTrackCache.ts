@@ -38,7 +38,9 @@ export const cachePlayedTrackAssets = async (
 
     // Audio needs a source that can actually be refetched: a blob: URL is this session's own handle
     // to bytes that are either already cached or on disk, so there is nothing to fetch and store.
-    if (src && !src.startsWith('blob:') && !await hasCachedSongAudio(song)) {
+    // A youtube track's audio is already a file in the importer's own cache; mirroring it into IndexedDB would store it twice.
+    const isYoutube = getPlaybackSourceRef(song).kind === 'youtube';
+    if (src && !isYoutube && !src.startsWith('blob:') && !await hasCachedSongAudio(song)) {
         console.log('[Cache] Caching fully played song:', song.name);
         try {
             const response = await fetch(src);

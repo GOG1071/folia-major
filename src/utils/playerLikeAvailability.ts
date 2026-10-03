@@ -31,6 +31,9 @@ export const resolveLikeAvailability = (
     }
 
     const sourceRef = getPlaybackSourceRef(currentSong);
+    if (sourceRef.kind === 'youtube') {
+        return { disabled: true, reason: { key: 'status.youtubeLikeUnavailable' } };
+    }
     if (sourceRef.kind === 'online' && !omni.canLikeSong(currentSong)) {
         return {
             disabled: true,
