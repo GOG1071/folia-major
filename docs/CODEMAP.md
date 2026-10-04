@@ -41,6 +41,7 @@
 | 32+ | `src/components/ponder/surfaces/ponderSurfaceGeometry.ts` |
 | 32+ | `src/components/visualizer/colorMix.ts` |
 | 32+ | `src/components/visualizer/definition.ts` |
+| 32+ | `src/i18n/config.ts` |
 | 32+ | `src/mods/folium/contract.ts` |
 | 32+ | `src/services/db.ts` |
 | 32+ | `src/services/onlineMusic/omni.ts` |
