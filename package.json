@@ -54,6 +54,7 @@
     "build:wallpaper-helper": "node packaging/windows/build-wallpaper-helper.mjs",
     "build:spout-sender": "node packaging/windows/build-spout-sender.mjs",
     "build:ffmpeg": "node packaging/ffmpeg/fetch-ffmpeg.mjs",
+    "build:yt-dlp": "node packaging/yt-dlp/fetch-yt-dlp.mjs",
     "contributors:add": "npx all-contributors-cli add",
     "contributors:generate": "npx all-contributors-cli generate",
     "models:fetch": "node build/fetchModels.mjs",
@@ -96,6 +97,10 @@
       {
         "from": "build/ffmpeg/${os}-${arch}",
         "to": "ffmpeg-audio"
+      },
+      {
+        "from": "build/yt-dlp/${os}-${arch}",
+        "to": "yt-dlp"
       },
       {
         "from": "build/icon.png",

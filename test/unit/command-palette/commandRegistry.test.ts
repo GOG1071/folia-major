@@ -60,6 +60,7 @@ const createContext = (overrides: CommandPaletteContextOverrides = {}): CommandP
             openAudioEqualizer: vi.fn(),
             applyAudioSoundPreset: vi.fn(),
             runAutoMatchBestLyric: vi.fn(async () => true),
+            playYoutubeUrl: vi.fn(async () => true),
         },
         navigation: {
         navigateToHome: vi.fn(),

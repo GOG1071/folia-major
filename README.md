@@ -113,6 +113,7 @@ https://github.com/user-attachments/assets/704f195a-2194-434b-86e8-8f36290e5cc4
 | 智能歌词匹配 | 本地歌曲可自动匹配在线歌词与封面，也支持手动修正匹配结果。 |
 | 本地歌词文件识别 | 自动加载同目录同名 `.lrc`、`.vtt`、`.ttml`、`.qrc`、`.yrc`、`.krc` 歌词文件，或歌词文件内嵌 LRC 歌词。适配 LDDC 生成的增强型逐字歌词格式。 |
 | Now Playing 接入 | 支持通过本机 [Now Playing](https://github.com/Widdit/now-playing-service/) 服务接入外部播放器的歌曲、时间轴与歌词信息，并驱动 Folia 的舞台视图与全屏歌词渲染。 |
+| YouTube 链接播放 | 桌面版内置 [yt-dlp](https://github.com/yt-dlp/yt-dlp)：在搜索框粘贴 YouTube 链接并回车，或使用命令面板的“播放 YouTube 链接”，即可下载音频并在播放器中播放，歌词自动从 QQ 音乐匹配。详见 [YouTube 链接播放](#youtube-链接播放桌面版)。 |
 | AI 主题生成 | 基于歌曲情绪与歌词内容生成沉浸式背景与视觉参数。 |
 | 多端体验 | 提供 Web 部署方式，同时支持桌面端打包分发。 |
 | 模组系统（实验性） | 桌面版可通过 Folium 模组添加歌词动画、背景、播放页图层、命令等，并从 [模组市场](https://folium-compound.vercel.app) 安装官方认证的模组。详见 [模组系统](#模组系统folium-v1x)。 |
@@ -190,6 +191,16 @@ Folia 提供了可选的官方同步服务端 `sync-server`，用于在多个设
 Folia 会读取音频文件元数据、同目录歌词和封面，并可通过网易云、QQ 音乐或酷狗音乐补全歌曲信息。自动匹配按网易云、QQ、酷狗依次回退；匹配不准确时，可以手动选择候选、恢复首次导入的本地信息，或进一步合并、拆分艺术家与专辑实体。
 
 完整的导入、重扫、匹配、实体编辑、歌单、缓存和故障排查说明见 [本地音乐库管理](docs/local-library-management.md)。
+
+## YouTube 链接播放（桌面版）
+
+桌面版安装包内置固定版本的 yt-dlp（官方单文件二进制，打包时校验 sha256，位于 `resources/yt-dlp/`），不需要用户另行安装。Web 版不提供此功能，会提示需要桌面版。
+
+- 入口：在搜索框粘贴 YouTube 链接后提交；或在命令面板运行“播放 YouTube 链接”。支持 `watch?v=`、`youtu.be/`、`music.youtube.com`、`shorts/`、`embed/`、`live/` 形式，只会下载单个视频，不会展开播放列表。
+- 音频下载到应用数据目录的 `youtube-audio/<视频 id>.*`，同一视频再次播放直接复用；经 `folia-youtube://` 协议提供给播放器，因此可视化、拖动进度等与本地歌曲一致。
+- 歌词：先清理标题与频道名得到歌名和歌手，再在 QQ 音乐中取得分最高且歌名匹配的候选（阈值低于普通自动匹配）；没有合格候选就不显示歌词。结果缓存在本地，网络失败时不缓存，下次播放会重试。
+- 开发时 `npm run build:yt-dlp` 下载当前平台的二进制到 `build/yt-dlp/`，或用环境变量 `FOLIA_YTDLP_PATH` 指向自己的 yt-dlp。
+- 已知限制：YouTube 曲目不支持收藏；下载的音频目前不计入媒体缓存的容量上限与自动清理。
 
 ## Community
 

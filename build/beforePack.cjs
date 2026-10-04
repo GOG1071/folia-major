@@ -1,7 +1,7 @@
 "use strict";
 
 // build/beforePack.cjs
-// Resolves electron-builder's target architecture and prepares its pinned FFmpeg runtime.
+// Resolves electron-builder's target architecture and prepares its pinned FFmpeg and yt-dlp runtimes.
 
 const ARCH_NAMES = ["ia32", "x64", "armv7l", "arm64", "universal"];
 
@@ -15,4 +15,8 @@ exports.default = async (context) => {
     "../packaging/ffmpeg/fetch-ffmpeg.mjs"
   );
   await prepareBundledFfmpeg({ platform: context.electronPlatformName, arch });
+  const { prepareBundledYtDlp } = await import(
+    "../packaging/yt-dlp/fetch-yt-dlp.mjs"
+  );
+  await prepareBundledYtDlp({ platform: context.electronPlatformName, arch });
 };

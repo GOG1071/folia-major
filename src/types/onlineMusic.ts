@@ -26,6 +26,7 @@ export type PlaybackSourceRef =
     }
     | { kind: 'local'; mediaId: string }
     | { kind: 'navidrome'; mediaId: string }
+    | { kind: 'youtube'; mediaId: string }
     | { kind: 'stage'; mediaId: string };
 
 export interface ProviderCapabilities {
