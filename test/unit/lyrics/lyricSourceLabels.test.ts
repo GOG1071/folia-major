@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getSongNativeLyricProviderSource } from '@/utils/lyrics/lyricSourceLabels';
+import { getLyricProviderLabel, getSongNativeLyricProviderSource } from '@/utils/lyrics/lyricSourceLabels';
 
 // test/unit/lyrics/lyricSourceLabels.test.ts
 
@@ -23,5 +23,18 @@ describe('getSongNativeLyricProviderSource', () => {
         expect(getSongNativeLyricProviderSource({
             sourceRef: { kind: 'online', providerId: 'future-provider', mediaId: '1' },
         })).toBeUndefined();
+    });
+});
+
+describe('getLyricProviderLabel', () => {
+    it('labels LRCLIB with its own name in every language', () => {
+        expect(getLyricProviderLabel('lrclib')).toBe('LRCLIB');
+    });
+
+    it('labels QQ Music and a removed source differently from LRCLIB', () => {
+        expect(getLyricProviderLabel('qq')).not.toBe('LRCLIB');
+        expect(getLyricProviderLabel('netease' as never)).not.toBe(getLyricProviderLabel('qq'));
+        expect(getLyricProviderLabel('netease' as never)).not.toBe('LRCLIB');
+        expect(getLyricProviderLabel(undefined)).toBe(getLyricProviderLabel('netease' as never));
     });
 });

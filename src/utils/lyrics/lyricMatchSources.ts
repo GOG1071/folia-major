@@ -1,6 +1,7 @@
 import type { LyricData, LyricProviderSource, SongResult } from '../../types';
 import { calculateMatchScore } from './matchScore';
 import { searchQQLyrics, fetchQQLyrics } from './providers/qqLyricProvider';
+import { fetchLrclibLyrics, searchLrclibLyrics } from './providers/lrclibLyricProvider';
 import { LYRIC_PROVIDER_SOURCES } from './lyricProviderSource';
 import { hasRenderableLyrics } from './validity';
 
@@ -25,17 +26,23 @@ const sortByMatchScore = (songs: SongResult[], target: LyricMatchSearchTarget) =
 );
 
 export async function searchLyricsByMatchSource(
-    _source: LyricProviderSource,
+    source: LyricProviderSource,
     query: string,
     target: LyricMatchSearchTarget,
 ): Promise<SongResult[]> {
+    if (source === 'lrclib') {
+        return sortByMatchScore(await searchLrclibLyrics(query), target);
+    }
     return sortByMatchScore(await searchQQLyrics(query), target);
 }
 
 export async function fetchLyricsForMatchSource(
-    _source: LyricProviderSource,
+    source: LyricProviderSource,
     selectedResult: SongResult,
 ): Promise<LyricMatchFetchResult | null> {
+    if (source === 'lrclib') {
+        return await fetchLrclibLyrics(selectedResult);
+    }
     const lyrics = await fetchQQLyrics(selectedResult);
     return {
         lyrics: hasRenderableLyrics(lyrics) ? lyrics : null,

@@ -1,4 +1,4 @@
-import type { LocalSong, LyricProviderSource, SongResult } from '../types';
+import type { LocalSong, SongResult } from '../types';
 import type { LocalSongMetadataSource } from '../types/localLibrary';
 import { getProviderSongMetadata } from './onlineMusic/songMetadata';
 import { searchQQLyrics } from '../utils/lyrics/providers/qqLyricProvider';
@@ -78,8 +78,9 @@ export const normalizeOnlineMetadataCandidate = (
     };
 };
 
+// Only a lyric source that also supplies metadata can seed a candidate (see sourceProvidesSongMetadata).
 export const normalizeLyricMatchMetadataCandidate = (
-    lyricSource: LyricProviderSource,
+    lyricSource: OnlineMetadataSource,
     result: SongResult,
     target: OnlineMetadataSearchTarget,
 ): OnlineMetadataCandidate => {

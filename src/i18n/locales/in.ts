@@ -1093,6 +1093,7 @@ export default {
   },
   "lyricProvider": {
     "qq": "QQ Music",
+    "lrclib": "LRCLIB",
     "online": "Lirik online",
   },
   "globalLyricOffset": {
@@ -1458,7 +1459,7 @@ export default {
     "disableHomeDynamicBackgroundDesc": "Saat diaktifkan, halaman beranda menghentikan animasi latar belakang untuk mengurangi penggunaan GPU.",
     "disableHomeDynamicBackgroundWarning": "Secara default mati, jadi latar belakang dinamis tetap aktif kecuali Anda mengaktifkannya.",
     "autoUseBestLyric": "Gunakan Lirik Terbaik Otomatis",
-    "autoUseBestLyricDesc": "Secara otomatis mencari lirik QQ Music, mengutamakan lirik per kata dengan kecocokan waktu sempurna.",
+    "autoUseBestLyricDesc": "Secara otomatis mencari lirik QQ Music (dengan LRCLIB sebagai cadangan bila QQ Music tidak punya), mengutamakan lirik per kata dengan kecocokan waktu sempurna.",
     "localLyricsPriority": "Prioritas lirik lagu lokal",
     "localLyricsPriorityDesc": "Pilih lirik mana yang digunakan pertama kali saat lagu lokal juga memiliki kecocokan online. Pilihan sumber lirik manual tetap dipertahankan.",
     "localLyricsPriorityLocal": "Lirik lokal",
@@ -3969,7 +3970,7 @@ export default {
         "next": "Ubah ke \u201csetelah lagu yang diputar\u201d dan yang kamu tambahkan menyelip tepat di belakang lagu yang sedang berjalan, jadi ia berikutnya. Ini mengubah semua pintu tambah-ke-antrean di aplikasi \u2014 tombol di kartu, yang muncul di baris antrean, perintah di palette."
       },
       "lyricsSource": {
-        "autoBest": "Dengan \u201cpilih yang terbaik otomatis\u201d menyala, Folia mencari lagu ini di QQ Music lalu mengambil versi per-kata yang cocok sempurna bila ada. Harganya, ia menimpa sumber yang kamu pilih manual di tab sumber \u2014 kalau pilihan manualmu tidak bertahan, biasanya inilah sebabnya.",
+        "autoBest": "Dengan \u201cpilih yang terbaik otomatis\u201d menyala, Folia mencari lagu ini di QQ Music (dan di LRCLIB bila QQ Music tidak punya) lalu mengambil versi per-kata yang cocok sempurna bila ada. Harganya, ia menimpa sumber yang kamu pilih manual di tab sumber \u2014 kalau pilihan manualmu tidak bertahan, biasanya inilah sebabnya.",
         "priority": "Dua kartu di bawah menentukan lirik lokal atau daring yang menang. Saat berkas lokal membawa lirik dan hasil daring juga ada, inilah yang memutuskan.",
         "globalOffset": "\u201cOffset linimasa global\u201d membuka penggaris satu layar penuh yang menggeser lirik semua lagu lebih awal atau lebih lambat \u2014 biasanya untuk mengimbangi keterlambatan tetap kartu suara atau Bluetooth.",
         "offsetSum": "Ia bernama sama dengan offset \u00b1250ms di tab sumber tetapi bukan hal yang sama: yang itu hanya untuk lagu saat ini dan hilang saat kamu berganti lagu, yang ini global dan bertahan. Keduanya dijumlahkan, jadi ketika satu lagu meleset jauh, periksa keduanya."

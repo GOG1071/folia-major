@@ -15,7 +15,7 @@ This rule applies to search, song detail, audio URLs, availability/replacement, 
 
 `omni` is a facade, not a raw-response escape hatch. Callers consume `UnifiedSong`, `OmniCollection`, `OmniPage`, `OmniLyricsResult`, `OmniAudioSource`, `OmniUser`, and `OmniError`; never make caller code depend on provider-specific field names or envelopes.
 
-Current provider implementation map: `providerRegistry.ts` selects capabilities, `providerAccountCache.ts` and `providerStorage.ts` retain account/session state, `qqProvider.ts` normalizes QQ Music data (QQ is the only online provider), and `qqTransport.ts` owns QQ transport details. `navidromeService.ts` is a separate Subsonic service, not an Omni provider.
+Current provider implementation map: `providerRegistry.ts` selects capabilities, `providerAccountCache.ts` and `providerStorage.ts` retain account/session state, `qqProvider.ts` normalizes QQ Music data (QQ is the only online provider), and `qqTransport.ts` owns QQ transport details. LRCLIB is a lyrics-only source wired through `utils/lyrics/lyricMatchSources.ts` and `autoMatchBestLyric.ts`, not an Omni provider: never route songs, playback or metadata through it. `navidromeService.ts` is a separate Subsonic service, not an Omni provider.
 
 ## Decide the boundary before coding
 

@@ -14,6 +14,7 @@ import {
     getMatchResultAlbumName,
 } from './lyricMatchResultHelpers';
 import { LyricPreviewPanel } from './LyricPreviewPanel';
+import { LyricMatchSourceTabs } from './LyricMatchSourceTabs';
 import { getProviderSongMetadata } from '../../services/onlineMusic/songMetadata';
 import { getSizedCoverUrl } from '../../utils/coverUrl';
 import { hasRenderableLyrics } from '../../utils/lyrics/validity';
@@ -46,8 +47,7 @@ const OnlineLyricMatchModal: React.FC<OnlineLyricMatchModalProps> = ({ song, onC
     const [selectedResult, setSelectedResult] = useState<SongResult | null>(null);
     const [isSearching, setIsSearching] = useState(false);
     const [isMatching, setIsMatching] = useState(false);
-    // QQ Music is the only lyric match source, so there is nothing to switch between.
-    const source: LyricMatchSource = LYRIC_MATCH_SOURCES[0];
+    const [source, setSource] = useState<LyricMatchSource>(LYRIC_MATCH_SOURCES[0]);
 
     const songInfo = React.useMemo(() => {
         const metadata = getProviderSongMetadata(song);
@@ -119,7 +119,7 @@ const OnlineLyricMatchModal: React.FC<OnlineLyricMatchModalProps> = ({ song, onC
         return () => {
             isCurrent = false;
         };
-    }, [song]);
+    }, [song, source]);
 
     const handleConfirm = async () => {
         if (!selectedResult) {
@@ -186,6 +186,16 @@ const OnlineLyricMatchModal: React.FC<OnlineLyricMatchModalProps> = ({ song, onC
                 <div className="flex-1 flex min-h-0 overflow-hidden">
                     {/* LEFT PANEL */}
                     <div className={`w-[62%] flex flex-col border-r ${borderColor} p-6 gap-5 min-h-0`}>
+                        <LyricMatchSourceTabs
+                            source={source}
+                            onChange={nextSource => {
+                                setSelectedResult(null);
+                                setSearchResults([]);
+                                setSource(nextSource);
+                            }}
+                            isDaylight={isDaylight}
+                        />
+
                         <div className="flex gap-3">
                             <div className={`flex-1 flex items-center gap-3 rounded-2xl border px-4 py-3 ${inputBg}`}>
                                 <Search size={18} className={textSecondary} />

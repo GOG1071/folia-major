@@ -3,6 +3,7 @@ import { saveLocalSong, saveLocalSongs, deleteLocalSong as dbDeleteLocalSong, de
 import { getLocalPlaylists, saveLocalPlaylists } from './localPlaylistService';
 import { parseEmbeddedMetadataAsync, type EmbeddedMetadataResult } from '../utils/localMetadataWorkerClient';
 import { autoMatchBestLyric } from '../utils/lyrics/autoMatchBestLyric';
+import { sourceProvidesSongMetadata } from '../utils/lyrics/lyricProviderSource';
 import { normalizeLyricMatchText } from '../utils/lyrics/matchScore';
 import { createSafeObjectUrl } from '../utils/blobGuards';
 import { resolveExplicitFileTimedLyricFormat, type ExplicitFileTimedLyricFormat } from '../utils/lyrics/formatDetection';
@@ -1370,13 +1371,15 @@ export async function matchLyrics(song: LocalSong): Promise<LyricData | null> {
                     song.matchedLyrics = bestMatch.lyrics;
                     song.matchedIsPureMusic = false;
 
-                    if (matchContext.metadataCandidate) {
+                    // A lyrics-only source (LRCLIB) has no metadata or cover to apply.
+                    const metadataSource = bestMatch.source;
+                    if (matchContext.metadataCandidate || !sourceProvidesSongMetadata(metadataSource)) {
                         await applyMatchedMetadata(song.id, {}, { lyricsOnly: true, songPatch: song });
                         return bestMatch.lyrics;
                     }
 
                     const matchedMetadata = normalizeLyricMatchMetadataCandidate(
-                        bestMatch.source,
+                        metadataSource,
                         bestMatch.song,
                         {
                             title: matchContext.title,

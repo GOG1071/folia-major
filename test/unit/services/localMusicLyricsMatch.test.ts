@@ -108,4 +108,37 @@ describe('localMusicService lyric matching', () => {
         }));
         expect(localSong.matchedLyrics).toBe(lyrics);
     });
+
+    it('applies a lyrics-only LRCLIB match without inventing online metadata or a cover', async () => {
+        const lyrics = { lines: [], isWordByWord: false };
+        vi.mocked(autoMatchBestLyric).mockResolvedValue({
+            lyrics,
+            source: 'lrclib',
+            id: 16233,
+            song: {
+                id: 16233,
+                name: 'Correct title',
+                artists: [{ id: 0, name: 'Correct artist' }],
+                album: { id: 0, name: 'Correct album' },
+                durationMs: 200000,
+            },
+        });
+        const localSong: LocalSong = {
+            ...song(),
+            titleOrigin: 'import',
+            onlineMetadata: undefined,
+            title: 'Correct title',
+            importedMetadata: { title: 'Correct title', titleSource: 'embedded', artistNames: ['Correct artist'], albumName: 'Correct album' },
+        };
+
+        await expect(matchLyrics(localSong)).resolves.toBe(lyrics);
+
+        expect(localSong.matchedLyricsSource).toBe('lrclib');
+        expect(localSong.matchedLyricsSongId).toBe(16233);
+        expect(applyMatchedMetadata).toHaveBeenCalledTimes(1);
+        expect(applyMatchedMetadata).toHaveBeenCalledWith('local-song', {}, expect.objectContaining({
+            lyricsOnly: true,
+            songPatch: expect.objectContaining({ matchedLyricsSource: 'lrclib' }),
+        }));
+    });
 });

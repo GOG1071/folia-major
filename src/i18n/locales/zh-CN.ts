@@ -1099,6 +1099,7 @@ export default {
   },
   "lyricProvider": {
     "qq": "QQ 音乐",
+    "lrclib": "LRCLIB",
     "online": "在线歌词",
   },
   "globalLyricOffset": {
@@ -1465,7 +1466,7 @@ export default {
     "disableHomeDynamicBackgroundDesc": "关闭后主页不再继续播放背景动画，可降低 GPU 占用。",
     "disableHomeDynamicBackgroundWarning": "默认情况下允许动态背景。",
     "autoUseBestLyric": "自动使用最佳歌词",
-    "autoUseBestLyricDesc": "自动检索 QQ 音乐歌词，若存在完美匹配的逐字歌词则自动优先采用。",
+    "autoUseBestLyricDesc": "自动检索 QQ 音乐歌词（QQ 音乐没有时再检索 LRCLIB），若存在完美匹配的逐字歌词则自动优先采用。",
     "localLyricsPriority": "本地歌曲歌词优先级",
     "localLyricsPriorityDesc": "本地歌曲同时存在在线匹配歌词时，选择优先使用的歌词。手动指定的歌词来源不受影响。",
     "localLyricsPriorityLocal": "本地歌词",
@@ -4083,7 +4084,7 @@ export default {
         "next": "选择后，新歌曲会插到当前歌曲后面。这个设置会影响卡片、队列行和命令窗口里的所有加入队列入口。"
       },
       "lyricsSource": {
-        "autoBest": "自动择优会从 QQ 匹配歌词，并可能覆盖来源页的手动选择。手动选择没有生效时，先检查这里。",
+        "autoBest": "自动择优会从 QQ 音乐匹配歌词（QQ 没有时再找 LRCLIB），并可能覆盖来源页的手动选择。手动选择没有生效时，先检查这里。",
         "priority": "底下两张卡决定本地和在线的歌词谁优先。本地文件自带的歌词和在线检索到的同时存在时，按这里说的来。",
         "globalOffset": "「全局时间轴偏移」点进去是一整屏的标尺，调的是所有歌的歌词整体提前或延后多少 —— 一般用来补声卡或蓝牙的固定延迟。",
         "offsetSum": "来源页偏移只对当前歌曲有效，全局偏移长期生效；两者会相加。"
