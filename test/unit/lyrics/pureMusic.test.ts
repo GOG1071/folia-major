@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasNeteasePureMusicFlag, isPureMusicLyricLines, isPureMusicLyricText } from '../../../src/utils/lyrics/pureMusic';
+import { isPureMusicLyricLines, isPureMusicLyricText } from '../../../src/utils/lyrics/pureMusic';
 
 // test/unit/lyrics/pureMusic.test.ts
 // 纯音乐判定：覆盖提示语的常见写法，以及不能误判的普通歌词、无歌词和歌词里恰好带“纯音乐”的情形。
@@ -107,14 +107,5 @@ describe('isPureMusicLyricLines', () => {
         expect(isPureMusicLyricLines([{ fullText: '第一句' }, { fullText: '纯音乐，请欣赏' }])).toBe(false);
         expect(isPureMusicLyricLines([])).toBe(false);
         expect(isPureMusicLyricLines(null)).toBe(false);
-    });
-});
-
-describe('hasNeteasePureMusicFlag', () => {
-    it('reads the provider flag from any lyric track', () => {
-        expect(hasNeteasePureMusicFlag({ lrc: { pureMusic: true } })).toBe(true);
-        expect(hasNeteasePureMusicFlag({ pureMusic: true })).toBe(true);
-        expect(hasNeteasePureMusicFlag({})).toBe(false);
-        expect(hasNeteasePureMusicFlag(null)).toBe(false);
     });
 });

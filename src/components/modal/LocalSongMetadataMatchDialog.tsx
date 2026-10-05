@@ -28,7 +28,8 @@ interface LocalSongMetadataMatchDialogProps {
 
 export const LocalSongMetadataMatchDialog = ({ song, assignment, isDaylight, onClose, onChanged }: LocalSongMetadataMatchDialogProps) => {
     const { t } = useTranslation();
-    const [source, setSource] = useState<OnlineMetadataSource>('netease');
+    // QQ Music is the only online metadata source.
+    const source: OnlineMetadataSource = 'qq';
     const [query, setQuery] = useState(() => buildLocalSongMetadataSearchQuery(song));
     const [results, setResults] = useState<OnlineMetadataCandidate[]>([]);
     const [selected, setSelected] = useState<OnlineMetadataCandidate | null>(null);
@@ -133,17 +134,6 @@ export const LocalSongMetadataMatchDialog = ({ song, assignment, isDaylight, onC
                     <button type="button" onClick={onClose} className="rounded-full p-2 hover:bg-current/10"><X size={19} /></button>
                 </header>
                 <div className="flex min-h-0 flex-1 flex-col gap-4 p-5">
-                    <div className="flex gap-2">
-                        {(['netease', 'qq', 'kugou'] as const).map(item => (
-                            <button key={item} type="button" onClick={() => { setSource(item); setResults([]); setSelected(null); }} className={`rounded-full px-4 py-2 text-xs font-bold ${source === item ? 'bg-blue-500 text-white' : 'bg-current/10'}`}>
-                                {item === 'netease'
-                                    ? t('localMusic.neteaseSource')
-                                    : item === 'qq'
-                                        ? t('localMusic.qqSource')
-                                        : t('localMusic.kugouSource')}
-                            </button>
-                        ))}
-                    </div>
                     <form onSubmit={event => { event.preventDefault(); void search(); }} className="flex gap-2">
                         <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-current/10 px-3">
                             <Search size={15} className="opacity-45" />

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // test/unit/onlineMusic/onlineProviderPlatform.test.ts
 // The provider platform hook as the home view sees it while Folium mods add and remove sources at
-// runtime: the list follows the registry, a source that goes away falls back to NetEase (and that is
+// runtime: the list follows the registry, a source that goes away falls back to QQ (and that is
 // remembered), and the search overlay's online source follows whichever provider ends up active.
 
 const storage = vi.hoisted(() => {
@@ -73,8 +73,8 @@ const mount = () => {
 };
 
 beforeEach(() => {
-    useOnlineProviderAccountStore.getState().setActiveProviderId('netease');
-    useSearchNavigationStore.setState({ searchSourceTab: 'netease' });
+    useOnlineProviderAccountStore.getState().setActiveProviderId('qq');
+    useSearchNavigationStore.setState({ searchSourceTab: 'qq' });
 });
 
 afterEach(() => {
@@ -117,7 +117,7 @@ describe('online provider platform with Folium mod sources', () => {
         expect(useSearchNavigationStore.getState().searchSourceTab).toBe(MOD_PROVIDER_ID);
     });
 
-    it('falls back to NetEase and remembers it when the active mod source goes away', () => {
+    it('falls back to QQ and remembers it when the active mod source goes away', () => {
         registerOnlineMusicProvider(modProvider);
         useOnlineProviderAccountStore.getState().setActiveProviderId(MOD_PROVIDER_ID);
         mount();
@@ -125,9 +125,9 @@ describe('online provider platform with Folium mod sources', () => {
 
         act(() => unregisterOnlineMusicProvider(MOD_PROVIDER_ID));
 
-        expect(platform!.activeProviderId).toBe('netease');
+        expect(platform!.activeProviderId).toBe('qq');
         expect(platform!.providers.some(provider => provider.providerId === MOD_PROVIDER_ID)).toBe(false);
-        expect(storage.get('active_online_provider_id')).toBe('netease');
-        expect(useSearchNavigationStore.getState().searchSourceTab).toBe('netease');
+        expect(storage.get('active_online_provider_id')).toBe('qq');
+        expect(useSearchNavigationStore.getState().searchSourceTab).toBe('qq');
     });
 });

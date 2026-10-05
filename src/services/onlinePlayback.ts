@@ -181,11 +181,9 @@ export async function loadOnlineSongLyrics(
             const artistName = metadata.artists.map(a => a.name).join(', ');
             const bestMatch = await autoMatchBestLyric(song.name, artistName, metadata.durationMs, {
                 album: metadata.album?.name,
-                preferredSource: settingsLyricSettings.preferredAlternativeLyricSource,
-                providerCandidate: song.sourceRef?.kind === 'online'
-                    && (song.sourceRef.providerId === 'netease' || song.sourceRef.providerId === 'kugou' || song.sourceRef.providerId === 'qq')
+                providerCandidate: song.sourceRef?.kind === 'online' && song.sourceRef.providerId === 'qq'
                     ? {
-                        providerId: song.sourceRef.providerId as 'netease' | 'kugou' | 'qq',
+                        providerId: 'qq' as const,
                         song,
                         lyricsResult: {
                             lyrics: parsedLyrics,
@@ -206,7 +204,6 @@ export async function loadOnlineSongLyrics(
                     hasOnlineOverride: true,
                     onlineOverrideLyrics: bestMatch.lyrics,
                     matchedLyricsSource: bestMatch.source,
-                    matchedLyricsProviderPlatform: bestMatch.matchedLyricsProviderPlatform,
                 };
                 await saveOnlineLyricsState(song, overrideState);
                 resolvedLyrics = bestMatch.lyrics;

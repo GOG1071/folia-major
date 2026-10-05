@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { installBaseState, localImportFixture, mockNeteaseApi, openApp } from './helpers/appFixtures';
+import { installBaseState, localImportFixture, mockQqApi, openApp } from './helpers/appFixtures';
 
 // test/ui/gridCommandFilter.spec.ts
 // 首页网格的「打字即筛选」现在由命令面板承担：网格只注册自己读键入，面板负责画框、
@@ -11,8 +11,8 @@ const trackCard = (page: Page) => page.getByText('Midnight Train');
 
 /** 导入固件库，再打开其中一个合集——网格视图是在这一层才出现的。 */
 const openTrackGrid = async (page: Page) => {
-    await installBaseState(page, { neteaseMode: 'guest', localImportFixture });
-    await mockNeteaseApi(page, 'guest');
+    await installBaseState(page, { qqMode: 'guest', localImportFixture });
+    await mockQqApi(page, 'guest');
     await openApp(page);
 
     await page.getByRole('button', { name: 'Folder' }).last().click();
@@ -319,8 +319,8 @@ const openRootPalette = async (page: Page) => {
 };
 
 test('offers the grid commands only where a track grid is on screen', async ({ page }) => {
-    await installBaseState(page, { neteaseMode: 'guest', localImportFixture });
-    await mockNeteaseApi(page, 'guest');
+    await installBaseState(page, { qqMode: 'guest', localImportFixture });
+    await mockQqApi(page, 'guest');
     await openApp(page);
 
     await page.getByRole('button', { name: 'Folder' }).last().click();

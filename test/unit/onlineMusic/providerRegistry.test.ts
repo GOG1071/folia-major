@@ -143,40 +143,8 @@ describe('online music provider registry', () => {
             ...kugouSong,
             sourceRef: { ...kugouSong.sourceRef, providerId: 'kugou' },
         };
-        expect(getSongResourceCacheKey('cover', canonicalKugouSong)).toBe('cover_v2_online:kugou:ABC123');
+        expect(getSongResourceCacheKey('cover', canonicalKugouSong)).toBe('cover_online:kugou:ABC123');
         expect(getSongResourceCacheKey('audio', canonicalKugouSong)).toBe('audio_online:kugou:ABC123');
-    });
-
-    it('preserves the cloud variant when migrating legacy NetEase cloud songs', () => {
-        const sourceTypeCloudSong = normalizePlaybackSongSource({
-            id: 456,
-            name: 'Cloud by source type',
-            artists: [],
-            album: { id: 1, name: 'Album' },
-            durationMs: 1000,
-            sourceType: 'cloud',
-        });
-        const legacyTypeCloudSong = normalizePlaybackSongSource({
-            id: 789,
-            name: 'Cloud by legacy type',
-            artists: [],
-            album: { id: 1, name: 'Album' },
-            durationMs: 1000,
-            t: 2,
-        });
-
-        expect(sourceTypeCloudSong.sourceRef).toEqual({
-            kind: 'online',
-            providerId: 'netease',
-            mediaId: '456',
-            variant: 'cloud',
-        });
-        expect(legacyTypeCloudSong.sourceRef).toEqual({
-            kind: 'online',
-            providerId: 'netease',
-            mediaId: '789',
-            variant: 'cloud',
-        });
     });
 
     it('resolves availability and replacements through the owning provider', async () => {

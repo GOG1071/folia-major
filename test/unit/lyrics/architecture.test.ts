@@ -26,10 +26,7 @@ const collectSourceFiles = async (relativeDir: string): Promise<string[]> => {
 };
 
 describe('lyrics architecture', () => {
-    it('keeps Netease call sites on the shared processing helper', async () => {
-        const directProcessingCallSites = [
-            'src/services/onlineMusic/neteaseProvider.ts',
-        ];
+    it('keeps lyric call sites delegating to the shared lyric source', async () => {
         const delegatedProcessingCallSites = [
             'src/components/modal/LyricMatchModal.tsx',
             'src/components/modal/NaviLyricMatchModal.tsx',
@@ -40,13 +37,6 @@ describe('lyrics architecture', () => {
             'src/services/onlinePlayback.ts',
             'src/utils/lyrics/lyricMatchSources.ts',
         ];
-
-        for (const file of directProcessingCallSites) {
-            const content = await readRepoFile(file);
-            expect(content, `${file} should use shared Netease processing`).toContain('processNeteaseLyrics');
-            expect(content, `${file} should not import legacy parsers`).not.toMatch(/lrcParser|yrcParser/);
-            expect(content, `${file} should not inline chorus detection`).not.toContain('detectChorusLines');
-        }
 
         for (const file of delegatedProcessingCallSites) {
             const content = await readRepoFile(file);

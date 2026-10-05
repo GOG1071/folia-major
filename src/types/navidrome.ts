@@ -1,4 +1,4 @@
-import { AmllDbPlatform, LyricData, LyricProviderSource, ReplayGainInfo, SongResult } from '../types';
+import { LyricData, LyricProviderSource, ReplayGainInfo, SongResult } from '../types';
 
 // Navidrome/Subsonic API Configuration
 export interface NavidromeConfig {
@@ -347,7 +347,6 @@ export interface NavidromeSong extends SongResult {
     useOnlineMetadata?: boolean;
     noAutoMatch?: boolean;
     matchedLyricsSource?: LyricProviderSource;
-    matchedLyricsProviderPlatform?: AmllDbPlatform;
     cachedStructuredLyrics?: StructuredLyric | StructuredLyric[] | StructuredLyricLine[];
     cachedPlainLyrics?: string;
 }

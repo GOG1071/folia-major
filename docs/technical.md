@@ -75,11 +75,7 @@ windowrule {
 
 ### 后端 API
 
-本项目依赖 [NeteaseCloudMusicApiEnhanced](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced) 提供音乐相关后端服务。
-
-如果使用前端版本的话，需要先自行部署该 API 服务。
-
-QQ 音乐是可选音源，由 npm 包 `@yakult-green-tea/qq-music-api` 提供，有两种部署形态。一是常驻 Node 进程（Docker 容器、裸 Node，或 Electron 主进程内嵌），功能最完整，支持微信扫码和 QQ 扫码两种登录方式。二是 serverless：从 3.0.0 起该包提供 `./serverless` 导出，本仓库已内置 Cloudflare Workers 与 Vercel 两个平台的入口，把 `VITE_QQ_API_BASE` 填成 `/api/qq` 并配好 `QQ_SESSION_SECRET` 即可，不需要单独部署 API 实例。serverless 形态默认只支持微信扫码登录，且 `/getMusicPlay` 必须先登录；Cloudflare 使用 3.1.0 或更高版本时，可选地绑定 Durable Object（`QQ_QR_CHANNEL` → `QqQrChannel`），增加 QQ 扫码登录方式。完整部署步骤与排错方法见 [QQ 音乐部署指南](qq-music-deployment.md)；Docker 镜像、卷和常驻服务细节见 [`deploy/docker/qq-api/README.md`](../deploy/docker/qq-api/README.md)。Electron 版在主进程内直接启动该包，不需要单独部署。
+QQ 音乐是唯一的在线音源，由 npm 包 `@yakult-green-tea/qq-music-api` 提供，有两种部署形态。一是常驻 Node 进程（Docker 容器、裸 Node，或 Electron 主进程内嵌），功能最完整，支持微信扫码和 QQ 扫码两种登录方式。二是 serverless：从 3.0.0 起该包提供 `./serverless` 导出，本仓库已内置 Cloudflare Workers 与 Vercel 两个平台的入口，把 `VITE_QQ_API_BASE` 填成 `/api/qq` 并配好 `QQ_SESSION_SECRET` 即可，不需要单独部署 API 实例。serverless 形态默认只支持微信扫码登录，且 `/getMusicPlay` 必须先登录；Cloudflare 使用 3.1.0 或更高版本时，可选地绑定 Durable Object（`QQ_QR_CHANNEL` → `QqQrChannel`），增加 QQ 扫码登录方式。完整部署步骤与排错方法见 [QQ 音乐部署指南](qq-music-deployment.md)；Docker 镜像、卷和常驻服务细节见 [`deploy/docker/qq-api/README.md`](../deploy/docker/qq-api/README.md)。Electron 版在主进程内直接启动该包，不需要单独部署。
 
 ### AI 能力
 
@@ -144,8 +140,6 @@ vercel env pull .env.local
 
 | 变量名 | 描述 | 是否必需 |
 | --- | --- | --- |
-| `VITE_NETEASE_API_BASE` | 网易云音乐 API 实例地址 | 是 |
-| `VITE_KUGOU_API_BASE` | Web 版的 KuGouMusicApi 实例地址；Electron 不使用此项 | 否，默认留空 |
 | `VITE_QQ_API_BASE` | QQ 音乐 API 实例地址；Cloudflare / Vercel 上可填 `/api/qq` 用本仓库内置的 serverless 入口；留空时 QQ 入口可见但不可用 | 否，默认留空 |
 | `QQ_SESSION_SECRET` | serverless 形态下加密登录态用的服务端密钥，**不加 `VITE_` 前缀**；未设置时 QQ 登录路由回 501，曲库路由仍可用 | 用 `/api/qq` 时需要 |
 | `QQ_SESSION_SECRET_PREVIOUS` | 轮换 `QQ_SESSION_SECRET` 时用来验证旧令牌，避免把所有人一次性登出 | 否 |
@@ -161,32 +155,22 @@ vercel env pull .env.local
 Gemini 示例：
 
 ```env
-VITE_NETEASE_API_BASE=http://localhost:3000
-VITE_KUGOU_API_BASE=
 VITE_AI_PROVIDER=google
 GEMINI_API_KEY=your_google_gemini_api_key
 ```
 
-Web 版要使用酷狗时，需要自行部署 [KuGouMusicApi](https://github.com/MakcRe/KuGouMusicApi) 并填写 `VITE_KUGOU_API_BASE`。该变量没有默认公共实例；开发调试时可在 `.env.local` 中临时指向调试服务。Electron 版在主进程中直接调用内置的 KuGouMusicApi Node 模块，不会再启动一个酷狗 HTTP 服务。
-
-Electron 的酷狗登录与账号刷新日志位于 `%APPDATA%\Folia\logs\kugou-provider.log`。日志只记录请求阶段、状态、字段名和错误摘要，token、Cookie、userid、dfid 会被脱敏。
-
-本机同时验收 Folia、网易云扫码和 QQ 扫码时，Vite 使用 `3000`，因此网易云 API 应改用 `3300`，QQ API 使用 `3200`。在 `folia-major/.env.local` 设置：
+本机同时验收 Folia 和 QQ 扫码时，Vite 使用 `3000`，QQ API 使用 `3200`。在 `folia-major/.env.local` 设置：
 
 ```env
-VITE_NETEASE_API_BASE=http://localhost:3300
 VITE_QQ_API_BASE=http://localhost:3200
 ```
 
-然后分别打开三个 PowerShell 窗口并保持运行：
+然后分别打开两个 PowerShell 窗口并保持运行：
 
 ```powershell
 # qq-music-api repo
 $env:PORT = '3200'
 npm start
-
-# folia-major repo：网易云 API
-npx cross-env PORT=3300 api
 
 # folia-major repo：前端
 npm run dev
@@ -197,7 +181,6 @@ npm run dev
 OpenAI 兼容接口示例：
 
 ```env
-VITE_NETEASE_API_BASE=http://localhost:3000
 VITE_AI_PROVIDER=openai
 OPENAI_API_KEY=your_api_key
 OPENAI_API_URL=https://api.deepseek.com
@@ -208,7 +191,6 @@ OPENAI_API_TEMPERATURE=0.7
 如果你使用的是 OpenAI 官方接口，也可以这样写：
 
 ```env
-VITE_NETEASE_API_BASE=http://localhost:3000
 VITE_AI_PROVIDER=openai
 OPENAI_API_KEY=your_api_key
 OPENAI_API_URL=https://api.openai.com/v1
@@ -255,14 +237,13 @@ vercel dev
 | visualizer 模式实现 | `src/components/visualizer/<mode>/*` |
 | 歌词解析和渲染提示 | `src/utils/lyrics/*` |
 | 智能过渡（混音过渡开关背后的全部实现） | `src/services/automix/*`，先读该目录的 `README.md` |
-| 本地音乐、Navidrome、网易云服务 | `src/services/*` |
+| 本地音乐、Navidrome、在线音乐（QQ）服务 | `src/services/*` |
 | 共享类型和默认 tuning | `src/types.ts` |
 
 新增设置时遵守项目 skill：视觉相关设置需要进入外观页的配置导入导出；功能性设置和可执行动作需要注册到 command palette。
 
 ## 技术栈
 
-- [NeteaseCloudMusicApiEnhanced](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced)
 - React 19
 - Vite 6
 - TypeScript

@@ -52,7 +52,6 @@ const OnlineLyricsTab: React.FC<OnlineLyricsTabProps> = ({
     const onlineSourceLabel = useMemo(() => {
         return getLyricProviderLabel(
             onlineLyricsState?.matchedLyricsSource ?? getSongNativeLyricProviderSource(song),
-            onlineLyricsState?.matchedLyricsProviderPlatform,
         );
     }, [onlineLyricsState, song]);
 

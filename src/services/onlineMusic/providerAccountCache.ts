@@ -29,7 +29,7 @@ export const loadProviderAccountSnapshot = async (
     const cached = await getFromCache<ProviderAccountSnapshot>(getProviderAccountSnapshotCacheKey(providerId));
     if (!cached || cached.version !== SNAPSHOT_VERSION || !cached.user) return null;
     if (!Array.isArray(cached.collections) || !Array.isArray(cached.likedSongIds)) return null;
-    // 歌单内行号（KuGou fileid）只在本次会话有效，旧版本写进来的一律不还原，由刷新重建。
+    // 旧版本写入过 likedSongFileIds（酷狗歌单内行号，已随酷狗一并移除），一律不还原。
     const { likedSongFileIds: _sessionScopedRowIds, ...snapshot } = cached as ProviderAccountSnapshot & {
         likedSongFileIds?: unknown;
     };

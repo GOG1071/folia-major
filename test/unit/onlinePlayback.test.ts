@@ -66,7 +66,7 @@ const song: SongResult = {
     artists: [],
     album: { id: 'album', name: 'Album' },
     durationMs: 1000,
-    sourceRef: { kind: 'online', providerId: 'kugou', mediaId: 'online-song' },
+    sourceRef: { kind: 'online', providerId: 'qq', mediaId: 'online-song' },
 };
 
 describe('online audio ReplayGain plumbing', () => {
@@ -175,7 +175,6 @@ describe('online QQ lyric candidate plumbing', () => {
         });
 
         expect(autoMatchMock).toHaveBeenCalledWith('Song', '', 1000, expect.objectContaining({
-            preferredSource: 'qq',
             providerCandidate: expect.objectContaining({
                 providerId: 'qq',
                 song: qqSong,
@@ -247,7 +246,7 @@ describe('instrumental tracks, once auto-match has settled them', () => {
             isPureMusic: true,
             chorusRanges: [],
         });
-        autoMatchMock.mockResolvedValue({ isPureMusic: true, source: 'netease', id: 1 });
+        autoMatchMock.mockResolvedValue({ isPureMusic: true, source: 'qq', id: 1 });
 
         const onLyrics = vi.fn();
         await loadOnlineSongLyrics(song, null, null, {
@@ -279,8 +278,8 @@ describe('instrumental tracks, once auto-match has settled them', () => {
             isPureMusic: false,
             chorusRanges: [],
         });
-        // song.sourceRef.providerId is 'kugou', so this is the same-provider case.
-        autoMatchMock.mockResolvedValue({ lyrics, source: 'kugou', id: 'online-song', song, isPureMusic: false });
+        // song.sourceRef.providerId is 'qq', so this is the same-provider case.
+        autoMatchMock.mockResolvedValue({ lyrics, source: 'qq', id: 'online-song', song, isPureMusic: false });
 
         const onLyrics = vi.fn();
         const onPureMusicChange = vi.fn();

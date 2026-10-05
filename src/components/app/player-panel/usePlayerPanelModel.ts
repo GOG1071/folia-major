@@ -26,7 +26,6 @@ import { buildPlayerPanelModel, type PlayerPanelDeps, type PlayerPanelViewModel 
 type PlayerPanelModelInputs = PlayerPanelDeps & {
     /** Liked-state sources: local files answer from disk, the rest from the provider's set. */
     isLocalSongLiked: (song: SongResult) => boolean;
-    likedSongIds: Set<string | number>;
     /** Chrome flag computed by buildPlayerViewFlags; combined with the runtime hidden state here. */
     shouldHidePlayerRightPanelButton: boolean;
     localSongs: LocalSong[];
@@ -46,7 +45,6 @@ type PlayerPanelModelInputs = PlayerPanelDeps & {
  */
 export const usePlayerPanelModel = ({
     isLocalSongLiked,
-    likedSongIds,
     shouldHidePlayerRightPanelButton,
     localSongs,
     localLibraryCatalog,
@@ -88,7 +86,7 @@ export const usePlayerPanelModel = ({
     // useStableActionSurface, so its identity is permanent (see the warning in
     // useStableCallbacks.ts) and a memo keyed on it answers with the first render's value forever:
     // favouriting a local song left this heart dark while the bottom bar's inline copy updated.
-    const isLiked = resolveSongLiked(currentSong, { isLocalSongLiked, starredNavidromeSongIds, likedSongIds });
+    const isLiked = resolveSongLiked(currentSong, { isLocalSongLiked, starredNavidromeSongIds });
 
     const collectionEntries = useMemo(() => createPlayerPanelCollectionEntries({
         currentSong,

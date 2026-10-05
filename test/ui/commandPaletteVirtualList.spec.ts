@@ -17,7 +17,7 @@ const seedApp = async (page: Page) => {
         localStorage.setItem(guideKey, version);
     }, [APP_VERSION, GUIDE_VERSION_STORAGE_KEY] as const);
 
-    await page.route('**/__mock_netease__/**', async (route) => {
+    await page.route('**/__mock_qq__/**', async (route) => {
         await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
     });
 };

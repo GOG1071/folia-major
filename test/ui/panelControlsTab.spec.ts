@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { APP_VERSION, GUIDE_VERSION_STORAGE_KEY, waitForAppMounted } from '../helpers/appState';
+import { APP_VERSION, GUIDE_VERSION_STORAGE_KEY, waitForAppMounted, withQqSourceRef } from '../helpers/appState';
 
 // test/ui/panelControlsTab.spec.ts
 // 覆盖播放面板控制页的模式取景器：箭头步进、完整列表入口，以及步进经过商籁时不再被拦截。
@@ -28,7 +28,7 @@ const openPlayerPage = async (page: import('@playwright/test').Page, bottomBarOf
         guideKey: GUIDE_VERSION_STORAGE_KEY,
         offset: bottomBarOffset,
     });
-    await page.route('**/__mock_netease__/**', async (route) => {
+    await page.route('**/__mock_qq__/**', async (route) => {
         await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
     });
 
@@ -59,7 +59,7 @@ const openOnlineLyricsTab = async (page: import('@playwright/test').Page) => {
             artists: [{ id: 10, name: 'Alpha' }],
             album: { id: 20, name: 'Shared Album' },
             durationMs: 180_000,
-            sourceRef: { kind: 'online', providerId: 'netease', mediaId: '397' },
+            sourceRef: { kind: 'online', providerId: 'qq', mediaId: '397' },
         };
         usePlaybackStore.getState().setCurrentSong(song);
         usePlaybackStore.getState().setPlayQueue([song]);
@@ -79,7 +79,7 @@ const openQueueWithFixture = async (page: import('@playwright/test').Page) => {
         { id: 2, name: 'Same Artist', artists: [{ id: 10, name: 'Alpha' }], album: { id: 21, name: 'Other Album' }, durationMs: 180_000 },
         { id: 3, name: 'Same Album', artists: [{ id: 11, name: 'Beta' }], album: { id: 20, name: 'Shared Album' }, durationMs: 180_000 },
         { id: 4, name: 'Other', artists: [{ id: 12, name: 'Gamma' }], album: { id: 22, name: 'Third Album' }, durationMs: 180_000 },
-    ];
+    ].map(withQqSourceRef);
     await page.evaluate(async (songs) => {
         const dbModulePath = '/src/services/db.ts';
         const { saveToCache } = await import(dbModulePath);

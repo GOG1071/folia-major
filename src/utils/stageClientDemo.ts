@@ -3,7 +3,7 @@
 
 export type StageLyricsFormat = 'lrc' | 'enhanced-lrc' | 'vtt' | 'ttml' | 'yrc' | 'qrc';
 
-export type StageLyricsSourceType = 'embedded' | 'local' | 'navidrome' | 'netease';
+export type StageLyricsSourceType = 'embedded' | 'local' | 'navidrome';
 
 export interface StageSessionRequestInput {
     baseUrl: string;
@@ -27,20 +27,6 @@ export interface StageLyricsRequestInput {
     artist?: string;
     album?: string;
     lyricSourceJson: string;
-}
-
-export interface StageSearchRequestInput {
-    baseUrl: string;
-    token: string;
-    query: string;
-    limit?: number;
-}
-
-export interface StagePlayRequestInput {
-    baseUrl: string;
-    token: string;
-    songId: number;
-    appendToQueue?: boolean;
 }
 
 export interface StagePlayerControlRequestInput {
@@ -147,37 +133,11 @@ export const validateStageLyricsRequestInput = (input: StageLyricsRequestInput):
         if (!parsed || typeof parsed !== 'object') {
             return 'Lyric source JSON must describe an object.';
         }
-        if (!parsed.type || !['embedded', 'local', 'navidrome', 'netease'].includes(parsed.type)) {
-            return 'Lyric source type must be embedded, local, navidrome, or netease.';
+        if (!parsed.type || !['embedded', 'local', 'navidrome'].includes(parsed.type)) {
+            return 'Lyric source type must be embedded, local, or navidrome.';
         }
     } catch {
         return 'Lyric source JSON must be valid JSON.';
-    }
-
-    return null;
-};
-
-export const validateStageSearchRequestInput = (input: StageSearchRequestInput): string | null => {
-    const baseAuthError = validateStageBaseAuth(input.baseUrl, input.token);
-    if (baseAuthError) {
-        return baseAuthError;
-    }
-
-    if (!normalizeText(input.query)) {
-        return 'Search query is required.';
-    }
-
-    return null;
-};
-
-export const validateStagePlayRequestInput = (input: StagePlayRequestInput): string | null => {
-    const baseAuthError = validateStageBaseAuth(input.baseUrl, input.token);
-    if (baseAuthError) {
-        return baseAuthError;
-    }
-
-    if (!Number.isInteger(input.songId) || input.songId <= 0) {
-        return 'songId must be a positive integer.';
     }
 
     return null;
@@ -366,50 +326,6 @@ export const buildStageClearRequest = (baseUrl: string, token: string): StageReq
         init: {
             method: 'DELETE',
             headers: buildStageBearerHeaders(token),
-        },
-    };
-};
-
-export const buildStageSearchRequest = (input: StageSearchRequestInput): StageRequestBuildResult => {
-    const validationError = validateStageSearchRequestInput(input);
-    if (validationError) {
-        throw new Error(validationError);
-    }
-
-    return {
-        endpoint: `${normalizeStageBaseUrl(input.baseUrl)}/stage/player/search`,
-        transport: 'json',
-        init: {
-            method: 'POST',
-            headers: buildStageBearerHeaders(input.token, {
-                'Content-Type': 'application/json',
-            }),
-            body: JSON.stringify({
-                query: normalizeText(input.query),
-                ...(Number.isInteger(input.limit) ? { limit: input.limit } : {}),
-            }),
-        },
-    };
-};
-
-export const buildStagePlayRequest = (input: StagePlayRequestInput): StageRequestBuildResult => {
-    const validationError = validateStagePlayRequestInput(input);
-    if (validationError) {
-        throw new Error(validationError);
-    }
-
-    return {
-        endpoint: `${normalizeStageBaseUrl(input.baseUrl)}/stage/player/play`,
-        transport: 'json',
-        init: {
-            method: 'POST',
-            headers: buildStageBearerHeaders(input.token, {
-                'Content-Type': 'application/json',
-            }),
-            body: JSON.stringify({
-                songId: input.songId,
-                ...(input.appendToQueue ? { appendToQueue: true } : {}),
-            }),
         },
     };
 };

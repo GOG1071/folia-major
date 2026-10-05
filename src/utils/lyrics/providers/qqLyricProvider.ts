@@ -9,8 +9,8 @@ import { SongResult } from '../../../types';
 import { parseLyricsByFormat } from '../parserCore';
 import { detectTimedLyricFormat } from '../formatDetection';
 import { qrcDecrypt } from './qrcDecrypt';
-import { applyDetectedChorusEffects, applyNeteaseChorusByTime } from '../chorusEffects';
-import type { NeteaseChorusRange } from '../chorusEffects';
+import { applyDetectedChorusEffects, applyChorusByTime } from '../chorusEffects';
+import type { ChorusRange } from '../../../types/onlineMusic';
 import { getOriginalCoverUrl } from '../../coverUrl';
 
 const isElectron = typeof window !== 'undefined' && (window as any).electron;
@@ -158,7 +158,7 @@ export async function searchQQLyrics(
  */
 export async function fetchQQLyrics(
   song: SongResult,
-  options: { chorusRanges?: NeteaseChorusRange[] } = {}
+  options: { chorusRanges?: ChorusRange[] } = {}
 ): Promise<any | null> {
   if (!song.id || !song.qqMid) {
     throw new Error('Missing song ID or mid');
@@ -208,7 +208,7 @@ export async function fetchQQLyrics(
     }
     parsed.isWordByWord = isQrc;
     if (options.chorusRanges && options.chorusRanges.length > 0) {
-      return applyNeteaseChorusByTime(parsed, options.chorusRanges);
+      return applyChorusByTime(parsed, options.chorusRanges);
     }
     return applyDetectedChorusEffects(parsed, decryptedLyric);
   } catch (error) {

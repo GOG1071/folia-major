@@ -63,10 +63,6 @@ skill 只负责地图和编译器都推不出来的东西：口头术语到名�
   路径：`skills/settings-feature-integration/SKILL.md`
   用于新增或调整设置项时判断接入位置：视觉相关设置必须进入视觉配置导入导出，功能性设置和可执行动作必须注册到 command palette。
 
-- `kugou-provider-alignment`
-  路径：`skills/kugou-provider-alignment/SKILL.md`
-  用于开发阶段根据 `docs\ku-go-api-docs.md`、`.env.local` 中的真实 KuGou 服务和 `test-results\.dev-credentials` 对齐酷狗 provider 的请求与响应，禁止猜测接口结构。
-
 - `online-song-omni-routing`
   路径：`skills/online-song-omni-routing/SKILL.md`
   用于所有在线歌曲、搜索、播放、歌词、歌单、账户和跨 provider 数据流，确保普通调用经过 Omni，只有 provider adapter/transport 直接接触原始接口。

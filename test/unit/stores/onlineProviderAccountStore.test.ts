@@ -18,12 +18,12 @@ describe('online provider account store', () => {
     beforeEach(() => vi.resetModules());
     afterEach(() => vi.unstubAllGlobals());
 
-    it('defaults legacy state to NetEase and persists the selected provider', async () => {
+    it('defaults to QQ and persists the selected provider', async () => {
         const storage = createStorage();
         vi.stubGlobal('localStorage', storage);
         const { useOnlineProviderAccountStore } = await import('@/stores/useOnlineProviderAccountStore');
 
-        expect(useOnlineProviderAccountStore.getState().activeProviderId).toBe('netease');
+        expect(useOnlineProviderAccountStore.getState().activeProviderId).toBe('qq');
         useOnlineProviderAccountStore.getState().setActiveProviderId('kugou');
 
         expect(useOnlineProviderAccountStore.getState().activeProviderId).toBe('kugou');

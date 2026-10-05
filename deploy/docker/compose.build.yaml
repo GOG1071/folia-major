@@ -14,18 +14,6 @@ services:
       context: ../..
       dockerfile: deploy/docker/images/backend.Dockerfile
 
-  netease-api:
-    image: folia-local/netease-api:check
-    build:
-      context: ../..
-      dockerfile: deploy/docker/images/netease-api.Dockerfile
-
-  kugou-api:
-    image: folia-local/kugou-api:check
-    build:
-      context: ../..
-      dockerfile: deploy/docker/images/kugou-api.Dockerfile
-
   qq-api:
     image: folia-local/qq-api:check
     build:

@@ -246,7 +246,7 @@ const hasQqCatalogRefs = (song: UnifiedSong): boolean => Boolean(
 
 // 搜索复用的是 `utils/lyrics` 里那条 `u.y.qq.com` 歌词搜索，它只把数字 `album.id` /
 // `singer.id` 带出来，albummid 与 singermid 在那一层就被丢掉了。点专辑 / 歌手时补一次
-// `/getSongInfo` 取回 mid —— 与 kugou 补 KRM 元数据是同一套契约，只在真的要导航时才发请求。
+// `/getSongInfo` 取回 mid —— 取回 mid；只在真的要导航时才发请求。
 export const resolveQqSongCatalogRefs = async (song: UnifiedSong): Promise<UnifiedSong> => {
     if (hasQqCatalogRefs(song)) return song;
 

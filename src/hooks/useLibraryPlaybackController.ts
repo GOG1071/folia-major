@@ -70,11 +70,9 @@ const isBlobObjectUrl = (url: string | null | undefined): url is string => (
 );
 
 type UseLibraryPlaybackControllerParams = {
-    likedSongIds: Set<MediaId>;
     userId?: MediaId;
     setLyrics: (nextLyrics: LyricData | null) => void;
     setIsLyricsLoading: SetState<boolean>;
-    setLikedSongIds: Dispatch<SetStateAction<Set<MediaId>>>;
     navigateToPlaybackView: () => void;
     persistLastPlaybackCache: (song: SongResult | null, queue: SongResult[]) => Promise<void>;
     restoreCachedThemeForSong: (songOrId: ThemeCacheSongKey | SongResult, options?: {
@@ -90,11 +88,9 @@ type UseLibraryPlaybackControllerParams = {
 
 // Owns local and Navidrome playback helpers so App.tsx can stay focused on assembly.
 export function useLibraryPlaybackController({
-    likedSongIds,
     userId,
     setLyrics,
     setIsLyricsLoading,
-    setLikedSongIds,
     navigateToPlaybackView,
     persistLastPlaybackCache,
     restoreCachedThemeForSong,
@@ -686,7 +682,6 @@ export function useLibraryPlaybackController({
             let isAutoMatched = false;
             let autoMatchedLyrics: LyricData | null = null;
             let matchedLyricsSource: SongResult['matchedLyricsSource'] | undefined;
-            let matchedLyricsProviderPlatform: SongResult['matchedLyricsProviderPlatform'] | undefined;
 
             if (!nextLyrics && !matchData?.noAutoMatch && !matchData?.matchedIsPureMusic) {
                 try {
@@ -702,7 +697,6 @@ export function useLibraryPlaybackController({
                     if (settingsLyricSettings.autoUseBestLyric) {
                         const bestMatch = await autoMatchBestLyric(navidromeSong.name, artistName, navidromeMetadata.durationMs, {
                             album: albumName,
-                            preferredSource: settingsLyricSettings.preferredAlternativeLyricSource,
                         });
                         if (bestMatch?.isPureMusic) {
                             isAutoMatched = true;
@@ -713,67 +707,19 @@ export function useLibraryPlaybackController({
                             autoMatchedLyrics = bestMatch.lyrics;
                             isAutoMatched = true;
                             matchedLyricsSource = bestMatch.source;
-                            matchedLyricsProviderPlatform = bestMatch.matchedLyricsProviderPlatform;
 
                             const newMatchData: NavidromeMatchData = {
                                 matchedLyrics: bestMatch.lyrics,
                                 matchedLyricsSource: bestMatch.source,
-                                matchedLyricsProviderPlatform: bestMatch.matchedLyricsProviderPlatform,
                                 lyricsSource: 'online',
                                 useOnlineLyrics: true,
                             };
 
-                            if (bestMatch.source === 'netease' || (bestMatch.source === 'amll' && bestMatch.matchedLyricsProviderPlatform === 'ncm')) {
-                                newMatchData.matchedSongId = bestMatch.id as number;
-                                try {
-                                    const nSong = await omni.getSongDetail('netease', bestMatch.id);
-                                    if (nSong) {
-                                        const metadata = getProviderSongMetadata(nSong, 'netease');
-                                        newMatchData.matchedArtists = metadata.artists.map(artist => artist.name).join(', ');
-                                        newMatchData.matchedAlbumName = metadata.album?.name;
-                                        const coverUrl = metadata.coverUrl;
-                                        if (coverUrl) {
-                                            newMatchData.matchedCoverUrl = coverUrl.replace('http:', 'https:');
-                                            newMatchData.useOnlineCover = true;
-                                        }
-                                    }
-                                } catch (err) {
-                                    console.error('[NaviPlay] Failed to fetch NetEase song detail for metadata:', err);
-                                }
-                            }
-
                             await saveToCache(`navidrome_match_${navidromeId}`, newMatchData);
                         }
                     }
-
-                    if (!isAutoMatched) {
-                        const searchQuery = `${navidromeSong.name} ${artistName}`.trim();
-                        const searchPage = await omni.searchProviderSongs('netease', searchQuery, { limit: 1, offset: 0 });
-
-                        if (searchPage?.items?.length) {
-                            const matchedSong = searchPage.items[0];
-                            const lyricResult = await omni.getLyrics(matchedSong);
-                            nextLyrics = lyricResult?.lyrics || null;
-                            (navidromeSong as NavidromeSong & { matchedIsPureMusic?: boolean; }).matchedIsPureMusic = lyricResult?.isPureMusic || false;
-                            if (nextLyrics || lyricResult?.isPureMusic) {
-                                autoMatchedLyrics = nextLyrics;
-                                isAutoMatched = true;
-                                matchedLyricsSource = 'netease';
-
-                            const newMatchData: NavidromeMatchData = {
-                                matchedSongId: matchedSong.id,
-                                matchedLyrics: nextLyrics || undefined,
-                                matchedIsPureMusic: lyricResult?.isPureMusic || false,
-                                matchedLyricsSource: 'netease',
-                                    lyricsSource: 'online',
-                                    useOnlineLyrics: true,
-                                };
-                                await saveToCache(`navidrome_match_${navidromeId}`, newMatchData);
-                            }
-                        }
-                    }
                 } catch (error) {
-                    console.warn('[App] Failed to fetch Netease lyrics for Navidrome song:', error);
+                    console.warn('[App] Failed to auto-match lyrics for Navidrome song:', error);
                 }
             }
 
@@ -783,14 +729,12 @@ export function useLibraryPlaybackController({
                 useOnlineLyrics?: boolean;
                 lyricsSource?: string;
                 matchedLyricsSource?: SongResult['matchedLyricsSource'];
-                matchedLyricsProviderPlatform?: SongResult['matchedLyricsProviderPlatform'];
             };
             if (isAutoMatched) {
                 mutableSong.matchedLyrics = autoMatchedLyrics ?? undefined;
                 mutableSong.useOnlineLyrics = true;
                 mutableSong.lyricsSource = 'online';
                 mutableSong.matchedLyricsSource = matchedLyricsSource;
-                mutableSong.matchedLyricsProviderPlatform = matchedLyricsProviderPlatform;
             } else {
                 mutableSong.matchedLyrics = matchData?.matchedLyrics;
                 mutableSong.matchedIsPureMusic = matchData?.matchedIsPureMusic;
@@ -799,7 +743,6 @@ export function useLibraryPlaybackController({
                     ? 'online'
                     : (hasRenderableLyrics(nextLyrics) ? 'navi' : matchData?.lyricsSource);
                 mutableSong.matchedLyricsSource = matchData?.matchedLyricsSource;
-                mutableSong.matchedLyricsProviderPlatform = matchData?.matchedLyricsProviderPlatform;
             }
 
             if (!coverUrl) {
@@ -817,7 +760,6 @@ export function useLibraryPlaybackController({
                 matchedArtists: matchData?.matchedArtists,
                 matchedAlbumName: matchData?.matchedAlbumName,
                 matchedLyricsSource: mutableSong.matchedLyricsSource || matchData?.matchedLyricsSource,
-                matchedLyricsProviderPlatform: mutableSong.matchedLyricsProviderPlatform || matchData?.matchedLyricsProviderPlatform,
             });
             const unifiedSongKey = getPlaybackSongKey(unifiedSong);
             const recoveredRepresentation = getPlaybackRepresentationForRevision(
@@ -1002,7 +944,6 @@ export function useLibraryPlaybackController({
                 matchedSongId: previousState?.matchedSongId,
                 matchedIsPureMusic: previousState?.matchedIsPureMusic,
                 matchedLyricsSource: previousState?.matchedLyricsSource,
-                matchedLyricsProviderPlatform: previousState?.matchedLyricsProviderPlatform,
             };
             await saveOnlineLyricsState(currentSong, nextState);
 
@@ -1033,7 +974,6 @@ export function useLibraryPlaybackController({
             matchedSongId: previousState?.matchedSongId,
             matchedIsPureMusic: previousState?.matchedIsPureMusic,
             matchedLyricsSource: previousState?.matchedLyricsSource,
-            matchedLyricsProviderPlatform: previousState?.matchedLyricsProviderPlatform,
         };
 
         if (source === 'imported' && !nextState.importedLyrics) {
@@ -1145,7 +1085,6 @@ export function useLibraryPlaybackController({
             return false;
         }
 
-  const settingsLyricSettings = useLyricSettingsStore.getState();
         setStatusMsg({ type: 'info', text: t('status.matchingBestLyrics') || '' });
 
         try {
@@ -1160,7 +1099,6 @@ export function useLibraryPlaybackController({
                 });
                 const bestMatch = await autoMatchBestLyric(matchContext.title, matchContext.artist, matchContext.durationMs, {
                     album: matchContext.album,
-                    preferredSource: settingsLyricSettings.preferredAlternativeLyricSource,
                     metadataCandidate: matchContext.metadataCandidate,
                 });
 
@@ -1178,7 +1116,6 @@ export function useLibraryPlaybackController({
                     matchedLyrics: bestMatch.lyrics,
                     matchedLyricsSongId: bestMatch.id,
                     matchedLyricsSource: bestMatch.source,
-                    matchedLyricsProviderPlatform: bestMatch.matchedLyricsProviderPlatform,
                     matchedIsPureMusic: false,
                     lyricsSource: 'online',
                 };
@@ -1207,7 +1144,6 @@ export function useLibraryPlaybackController({
                 const albumName = navidromeMetadata.album?.name || '';
                 const bestMatch = await autoMatchBestLyric(navidromeSong.name, artistName, navidromeMetadata.durationMs, {
                     album: albumName,
-                    preferredSource: settingsLyricSettings.preferredAlternativeLyricSource,
                 });
 
                 if (!bestMatch) {
@@ -1222,12 +1158,8 @@ export function useLibraryPlaybackController({
                 const matchData: NavidromeMatchData = {
                     matchedLyrics: bestMatch.lyrics,
                     matchedLyricsSource: bestMatch.source,
-                    matchedLyricsProviderPlatform: bestMatch.matchedLyricsProviderPlatform,
                     lyricsSource: 'online',
                     useOnlineLyrics: true,
-                    matchedSongId: bestMatch.source === 'netease' || (bestMatch.source === 'amll' && bestMatch.matchedLyricsProviderPlatform === 'ncm')
-                        ? bestMatch.id as number
-                        : undefined,
                     matchedIsPureMusic: false,
                 };
                 await saveToCache(`navidrome_match_${navidromeSong.navidromeData.id}`, matchData);
@@ -1236,7 +1168,6 @@ export function useLibraryPlaybackController({
                     ...currentSong,
                     matchedLyrics: bestMatch.lyrics,
                     matchedLyricsSource: bestMatch.source,
-                    matchedLyricsProviderPlatform: bestMatch.matchedLyricsProviderPlatform,
                     matchedIsPureMusic: false,
                     lyricsSource: 'online' as const,
                     useOnlineLyrics: true,
@@ -1256,10 +1187,8 @@ export function useLibraryPlaybackController({
             const ownLyricsResult = await omni.getLyrics(currentSong);
             const bestMatch = await autoMatchBestLyric(currentSong.name, artistName, currentSongMetadata.durationMs, {
                 album: albumName,
-                preferredSource: settingsLyricSettings.preferredAlternativeLyricSource,
-                providerCandidate: sourceRef.kind === 'online'
-                    && (sourceRef.providerId === 'netease' || sourceRef.providerId === 'kugou')
-                    ? { providerId: sourceRef.providerId as 'netease' | 'kugou', song: currentSong, lyricsResult: ownLyricsResult }
+                providerCandidate: sourceRef.kind === 'online' && sourceRef.providerId === 'qq'
+                    ? { providerId: 'qq' as const, song: currentSong, lyricsResult: ownLyricsResult }
                     : undefined,
             });
 
@@ -1282,7 +1211,6 @@ export function useLibraryPlaybackController({
                 matchedSongId: bestMatch.id,
                 matchedIsPureMusic: false,
                 matchedLyricsSource: bestMatch.source,
-                matchedLyricsProviderPlatform: bestMatch.matchedLyricsProviderPlatform,
             };
             await saveOnlineLyricsState(currentSong, nextState);
 
@@ -1389,17 +1317,7 @@ export function useLibraryPlaybackController({
             return;
         }
         try {
-            const nextLiked = await omni.toggleSongLike(currentSong, likedSongIds);
-            if (sourceRef.providerId === 'netease') {
-                setLikedSongIds(prev => {
-                    const next = new Set(prev);
-                    for (const id of next) {
-                        if (String(id) === String(sourceRef.mediaId)) next.delete(id);
-                    }
-                    if (nextLiked) next.add(sourceRef.mediaId);
-                    return next;
-                });
-            }
+            const nextLiked = await omni.toggleSongLike(currentSong);
             setStatusMsg({ type: 'success', text: nextLiked ? t('status.liked') : t('status.unliked') || 'Removed from Liked' });
         } catch (error) {
             console.error('Like failed', error);
@@ -1408,10 +1326,8 @@ export function useLibraryPlaybackController({
     }, [
         currentSong,
         isLocalSongLiked,
-        likedSongIds,
         starredNavidromeSongIds,
         loadLocalPlaylists,
-        setLikedSongIds,
         setStarredNavidromeSongIds,
         setStatusMsg,
         t,

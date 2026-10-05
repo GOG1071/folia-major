@@ -1085,50 +1085,6 @@ export function usePlaybackQueueController({
         return matchesNextQueue ? { ops } : buildReloadQueueDiffDraft();
     }, [buildReloadQueueDiffDraft]);
 
-    const handleStageExternalPlayRequest = useCallback(async (request: { requestId: string; songId: number; appendToQueue?: boolean; }) => {
-        try {
-            const song = await omni.getSongDetail('netease', request.songId);
-            if (!song) {
-                throw new Error(`Song ${request.songId} was not found.`);
-            }
-
-            let actionData: any = undefined;
-            let baseSnapshot: StagePlayerSnapshot | undefined;
-            let snapshot: StagePlayerSnapshot | undefined;
-            if (request.appendToQueue) {
-                actionData = appendOnlineSongsToMainQueue([song], { suppressToast: true });
-                baseSnapshot = buildStageQueueOperationSnapshot(actionData.currentSong ?? currentSong, actionData.baseQueue ?? playQueue);
-                snapshot = buildStageQueueOperationSnapshot(actionData.currentSong ?? currentSong, actionData.queue ?? playQueue);
-                actionData = {
-                    ...actionData,
-                    diff: buildStageQueueAddDiffDraft(
-                        actionData.addBehavior === 'next' ? 'insert-next' : 'append',
-                        actionData.baseQueue ?? [],
-                        actionData.queue ?? [],
-                        actionData.affectedSongs ?? [],
-                        snapshot,
-                    ),
-                };
-            } else {
-                await playSong(song, [song], false, { shouldNavigateToPlayer: true });
-            }
-            await window.electron?.completeStageExternalPlayRequest?.({
-                requestId: request.requestId,
-                ok: true,
-                result: actionData,
-                baseSnapshot,
-                snapshot,
-            });
-        } catch (error) {
-            console.warn('[Stage] Failed to handle external play request', error);
-            await window.electron?.completeStageExternalPlayRequest?.({
-                requestId: request.requestId,
-                ok: false,
-                error: error instanceof Error ? error.message : String(error),
-            });
-        }
-    }, [appendOnlineSongsToMainQueue, buildStageQueueAddDiffDraft, buildStageQueueOperationSnapshot, currentSong, playQueue, playSong]);
-
     const resolveStageQueueIndex = useCallback((queue: SongResult[], request: StagePlayerQueueRequest): number => {
         const requestedIndex = typeof request.index === 'number' && Number.isInteger(request.index)
             ? request.index
@@ -1140,33 +1096,10 @@ export function usePlaybackQueueController({
         return resolveStagePlayerQueueItemIndex(queue, request.queueItemId || request.fromQueueItemId);
     }, []);
 
-    const loadStageQueueSongs = useCallback(async (request: StagePlayerQueueRequest) => {
-        const singleSongId = typeof request.songId === 'number' && Number.isInteger(request.songId) && request.songId > 0
-            ? request.songId
-            : null;
-        const songIds = Array.isArray(request.songIds) && request.songIds.length > 0
-            ? request.songIds
-            : singleSongId !== null
-                ? [singleSongId]
-                : [];
-
-        if (songIds.length === 0) {
-            throw new Error('Queue append requires songId or songIds.');
-        }
-
-        const songs: SongResult[] = [];
-        for (const songId of songIds) {
-            const song = await omni.getSongDetail('netease', songId);
-            if (song && !isSongUnavailable(song)) {
-                songs.push(song);
-            }
-        }
-
-        if (songs.length === 0) {
-            throw new Error('No queueable songs were found.');
-        }
-
-        return songs;
+    // The stage API addresses songs by NetEase numeric id, and NetEase is no longer a provider, so there is
+    // nothing left that can turn those ids into queueable songs. Reported as an error to the caller.
+    const loadStageQueueSongs = useCallback(async (_request: StagePlayerQueueRequest): Promise<SongResult[]> => {
+        throw new Error('Queue append by songId is not supported: the stage API song ids belonged to a removed provider.');
     }, []);
 
     const handleStagePlayerQueueRequest = useCallback(async (request: StagePlayerQueueRequest) => {
@@ -1347,7 +1280,6 @@ export function usePlaybackQueueController({
         handleNextTrack,
         handlePrevTrack,
         skipAfterPlaybackFailure,
-        handleStageExternalPlayRequest,
         shuffleQueue,
         clearQueue,
     });

@@ -63,15 +63,13 @@ import { consumeProgrammaticPause, playbackFade } from './services/playbackFade'
 import { getSongArtistLabel, getSongCoverUrl } from './services/onlineMusic/songMetadata';
 import { isNavidromeEnabled } from './services/navidromeService';
 import { useAppNavigation } from './hooks/useAppNavigation';
-import { useNeteaseLibrary } from './hooks/useNeteaseLibrary';
-import { useKugouLibrary } from './hooks/useKugouLibrary';
+import { useAppCacheManager } from './hooks/useAppCacheManager';
 import { useQqLibrary } from './hooks/useQqLibrary';
 import { useOnlineProviderPlatform } from './hooks/useOnlineProviderPlatform';
 import { useAppPreferences } from './hooks/useAppPreferences';
 import { useElectronPlaybackBridge } from './hooks/useElectronPlaybackBridge';
 import { useElectronDisplaySleepBlocker } from './hooks/useElectronDisplaySleepBlocker';
 import { useSleepTimer } from './hooks/useSleepTimer';
-import { useElectronNeteaseApiStatus } from './hooks/useElectronNeteaseApiStatus';
 import { useLocalLibraryAutoScan } from './hooks/useLocalLibraryAutoScan';
 import { useElectronVideoExportController } from './hooks/useElectronVideoExportController';
 import { useElectronWindowPlaybackHandoff } from './hooks/useElectronWindowPlaybackHandoff';
@@ -81,12 +79,9 @@ import { usePlaybackAudioBridge } from './hooks/usePlaybackAudioBridge';
 import { useTranscodeFallback } from './hooks/useTranscodeFallback';
 import { useAutomixDecks, type AutomixDeckId } from './services/automix/useAutomixDecks';
 import { usePlaybackInteractionBridge } from './hooks/usePlaybackInteractionBridge';
-import { usePersonalFmModeController } from './hooks/usePersonalFmModeController';
-import { PERSONAL_FM_MODE_COMMAND_ID } from './components/command-palette/commands/fmModeCommand';
 import { usePlaybackUiEffects } from './hooks/usePlaybackUiEffects';
 import { useLibraryPlaybackController } from './hooks/useLibraryPlaybackController';
 import { useNavidromeScrobbleReporter } from './hooks/useNavidromeScrobbleReporter';
-import { useNeteaseScrobbleReporter } from './hooks/useNeteaseScrobbleReporter';
 import { usePlaybackQueueController } from './hooks/usePlaybackQueueController';
 import { useYoutubePlayback } from './hooks/useYoutubePlayback';
 import { usePlaybackTransportController } from './hooks/usePlaybackTransportController';
@@ -246,7 +241,6 @@ export default function App() {
 
     // UI State
     const statusMsg = useStatusMessage();
-    useElectronNeteaseApiStatus(t);
     // Watches the imported local folders and rescans them when their contents change.
     useLocalLibraryAutoScan();
 
@@ -704,44 +698,19 @@ export default function App() {
         loadMoreSearchResults: state.loadMoreSearchResults,
     })));
 
-    // Netease Library Hook
-    // manages user data, playlists, liked songs, and related actions
-    const {
-        user,
-        playlists,
-        cloudPlaylist,
-        likedSongIds,
-        isSyncing,
-        cacheSize,
-        refreshUserData,
-        updateCacheSize,
-        handleClearCache,
-        handleSyncData,
-        handleLogout,
-        setLikedSongIds,
-    } = useNeteaseLibrary({
-        t,
-    });
+    // Cache size readout and the clear-cache action behind the settings panel.
+    const { cacheSize, updateCacheSize, handleClearCache } = useAppCacheManager({ t });
 
-    const {
-        refresh: refreshKugouLibrary,
-        logout: logoutKugouLibrary,
-        checkLoginStatus: checkKugouLoginStatus,
-    } = useKugouLibrary();
     const {
         refresh: refreshQqLibrary,
         logout: logoutQqLibrary,
     } = useQqLibrary();
     const onlineProviderRefreshers = useMemo(() => ({
-        netease: refreshUserData,
-        kugou: refreshKugouLibrary,
         qq: refreshQqLibrary,
-    }), [refreshKugouLibrary, refreshQqLibrary, refreshUserData]);
+    }), [refreshQqLibrary]);
     const onlineProviderLogouts = useMemo(() => ({
-        netease: handleLogout,
-        kugou: logoutKugouLibrary,
         qq: logoutQqLibrary,
-    }), [handleLogout, logoutKugouLibrary, logoutQqLibrary]);
+    }), [logoutQqLibrary]);
 
     const prepareOnlineProviderSwitch = useCallback((_currentProviderId: OnlineProviderId, nextProviderId: OnlineProviderId): Promise<boolean> => {
         return new Promise<boolean>((resolve) => {
@@ -802,13 +771,18 @@ export default function App() {
         };
     }, [handleCancelProviderSwitch, handleConfirmProviderSwitch, isDaylight, providerSwitchPending, t]);
     const onlineProviderPlatform = useOnlineProviderPlatform(onlineProviderRefreshers, prepareOnlineProviderSwitch, onlineProviderLogouts);
+    // The signed-in account and its liked songs come from the active provider's account snapshot.
+    const user = onlineProviderPlatform.activeProvider?.user ?? null;
+    const handleLogout = useCallback(async () => {
+        try {
+            await onlineProviderPlatform.logoutProvider(onlineProviderPlatform.activeProviderId);
+        } catch (error) {
+            console.warn('[Omni] Failed to log out of the active provider', error);
+        }
+        setStatusMsg({ type: 'info', text: t('status.loggedOut') });
+    }, [onlineProviderPlatform.activeProviderId, onlineProviderPlatform.logoutProvider, t]);
     const handleActiveProviderSyncData = useCallback(async () => {
         const providerId = onlineProviderPlatform.activeProviderId;
-        if (providerId === 'netease') {
-            await handleSyncData();
-            return;
-        }
-
         setIsProviderSyncing(true);
         try {
             const synced = await onlineProviderPlatform.refreshProvider(providerId);
@@ -820,16 +794,15 @@ export default function App() {
                     ? t(authExpired ? 'status.loginExpired' : 'status.syncFailed')
                     : t('status.dataSynced'),
             });
+            if (synced !== false) void updateCacheSize();
         } catch (error) {
             console.warn('[OmniSync] Provider data sync failed', { providerId, error });
             setStatusMsg({ type: 'error', text: t('status.syncFailed') });
         } finally {
             setIsProviderSyncing(false);
         }
-    }, [handleSyncData, onlineProviderPlatform.activeProviderId, onlineProviderPlatform.refreshProvider, setStatusMsg, t]);
-    const isActiveProviderSyncing = onlineProviderPlatform.activeProviderId === 'netease'
-        ? isSyncing
-        : isProviderSyncing;
+    }, [onlineProviderPlatform.activeProviderId, onlineProviderPlatform.refreshProvider, setStatusMsg, t, updateCacheSize]);
+    const isActiveProviderSyncing = isProviderSyncing;
     const refreshActiveProviderPlaylists = useCallback(
         () => omni.refreshProviderPlaylists(onlineProviderPlatform.activeProviderId),
         [onlineProviderPlatform.activeProviderId],
@@ -837,7 +810,6 @@ export default function App() {
     useHomeProviderRefresh({
         onlineProviderPlatform,
         refreshActiveProviderPlaylists,
-        checkKugouLoginStatus,
     });
     const {
         stageStatus,
@@ -959,11 +931,9 @@ export default function App() {
         handleAutoMatchBestLyricForCurrentSong,
         handleLike,
     } = useLibraryPlaybackController({
-        likedSongIds,
         userId: user?.id,
         setLyrics,
         setIsLyricsLoading,
-        setLikedSongIds,
         navigateToPlaybackView,
         persistLastPlaybackCache,
         restoreCachedThemeForSong,
@@ -1065,7 +1035,6 @@ export default function App() {
         handleNextTrack,
         handlePrevTrack,
         skipAfterPlaybackFailure,
-        handleStageExternalPlayRequest,
         shuffleQueue,
         clearQueue,
     } = usePlaybackQueueController({
@@ -1344,7 +1313,7 @@ export default function App() {
             title: stageNextUpTrack.name || '',
             artist: getSongArtistLabel(stageNextUpTrack) || null,
             // Same sanitising every other cover in the app goes through (see createCoverUrlResolver):
-            // upgrades the http: covers netease/kugou still hand out - blocked as mixed content in the
+            // upgrades legacy http: covers (persisted by older builds) - blocked as mixed content in the
             // packaged window - and keeps only the first of a comma-joined multi-value.
             coverUrl: toSafeRemoteUrl(getSongCoverUrl(stageNextUpTrack)) ?? null,
         };
@@ -1447,11 +1416,6 @@ export default function App() {
         currentSong,
         activeDeck: automix.activeDeck,
     });
-    useNeteaseScrobbleReporter({
-        audioRef,
-        currentSong,
-        activeDeck: automix.activeDeck,
-    });
 
     const {
         mediaSessionPlayRef,
@@ -1520,14 +1484,13 @@ export default function App() {
         exportState,
         lyricTimelineOffsetMs: effectiveLyricTimelineOffsetMs,
         onRemoteExportCommand: handleExportCommand,
-        onExternalPlayRequest: handleStageExternalPlayRequest,
         onRemoteCycleLoopMode: handleToggleLoopMode,
         onRemoteTransitionSeek: seekDuringTransition,
         publishTrackTransition: automixEnabled,
         isTrackTransitionAudible: automix.isTransitionAudible,
         // Keyed on the displayed track, so the like state matches the song the remote is showing
         // while a blend is held rather than the one arriving underneath it.
-        isLiked: resolveSongLiked(displaySong, { isLocalSongLiked, starredNavidromeSongIds, likedSongIds }),
+        isLiked: resolveSongLiked(displaySong, { isLocalSongLiked, starredNavidromeSongIds }),
         onLike: handleLike,
     });
 
@@ -1578,13 +1541,6 @@ export default function App() {
         pausePlayback,
         resumePlayback,
         syncStageLyricsClock,
-    });
-
-    const { personalFmSelection, personalFmSelectionLabel, isPersonalFmModeSupported, setPersonalFmSelection } = usePersonalFmModeController({
-        isFmMode,
-        currentSong,
-        playSong,
-        t: (key: string, fallback?: string) => t(key, fallback ?? ''),
     });
 
     // Wallpaper mode removes normal window semantics (no minimize/maximize/close, no dragging, and
@@ -1794,12 +1750,10 @@ export default function App() {
         moveQueueSongToNext,
         moveQueueSongToEnd,
         setReplayGainMode: handleChangeReplayGainMode,
-        isPersonalFmModeSupported,
-        setPersonalFmSelection,
         runAutoMatchBestLyric: handleAutoMatchBestLyricForCurrentSong,
         playYoutubeUrl,
         toggleSongLike: handleLike,
-        isSongLiked: resolveSongLiked(displaySong, { isLocalSongLiked, starredNavidromeSongIds, likedSongIds }),
+        isSongLiked: resolveSongLiked(displaySong, { isLocalSongLiked, starredNavidromeSongIds }),
 
         navigateToHome,
         navigateToPlayer,
@@ -1844,15 +1798,6 @@ export default function App() {
             || Boolean(pendingUnavailableReplacement),
         context: commandPaletteContext,
     });
-    // The FM tab reuses the palette's picker instead of carrying its own copy of the mode list.
-    // Read through a ref rather than depended on: openCommandById tracks the palette's isExecuting
-    // flag, so depending on it would rebuild the player panel model on unrelated renders. The
-    // picker only ever runs from a click, so the latest one is the right one.
-    const openCommandByIdRef = useRef(commandPalette.openCommandById);
-    openCommandByIdRef.current = commandPalette.openCommandById;
-    const handleOpenFmModePicker = useMemo(() => (
-        isPersonalFmModeSupported ? () => openCommandByIdRef.current(PERSONAL_FM_MODE_COMMAND_ID) : undefined
-    ), [isPersonalFmModeSupported]);
     const nowPlayingDebugSnapshot = useMemo(() => (
         stageSource === 'now-playing'
             ? {
@@ -2188,9 +2133,6 @@ export default function App() {
         navigateToPlayer,
         navigateToLattice,
         refreshOnlineProviderPlaylists: refreshActiveProviderPlaylists,
-        user,
-        playlists,
-        cloudPlaylist,
         focusedPlaylistIndex,
         setFocusedPlaylistIndex,
         navigateToSearch,
@@ -2263,8 +2205,6 @@ export default function App() {
         handleClearOnlineLyricsState,
         handleLyricTimelineOffsetChange,
         handleChangeReplayGainMode,
-        fmModeLabel: personalFmSelectionLabel,
-        handleOpenFmModePicker,
         handleFmTrash,
         handleNextTrack,
         handlePrevTrack,
@@ -2290,7 +2230,6 @@ export default function App() {
         handleToggleDaylight: toggleDaylightMode,
         // Derived inside the hook, but these are the sources only App.tsx holds.
         isLocalSongLiked,
-        likedSongIds,
         shouldHidePlayerRightPanelButton,
         localSongs,
         localLibraryCatalog,

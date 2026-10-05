@@ -2,9 +2,9 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { LogOut, SlidersHorizontal, HardDrive, Trash2, RefreshCw, Crown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { AudioQualityPreference, ProviderUser } from '../../types/onlineMusic';
 import { useOnlineProviderAccountStore } from '../../stores/useOnlineProviderAccountStore';
 import { omni } from '../../services/onlineMusic/omni';
+import type { AudioQualityPreference, ProviderUser } from '../../types/onlineMusic';
 
 interface AccountTabProps {
     user: ProviderUser | null;
@@ -41,18 +41,9 @@ const AccountTab: React.FC<AccountTabProps> = ({
 }) => {
     const { t } = useTranslation();
     const activeProviderId = useOnlineProviderAccountStore(state => state.activeProviderId);
-    const providerAccount = useOnlineProviderAccountStore(state => state.accounts[state.activeProviderId]);
-    const clearProviderAccount = useOnlineProviderAccountStore(state => state.clearAccount);
-    const activeUser = providerAccount?.user || (activeProviderId === 'netease' ? user : null);
-
-    const handleLogout = async () => {
-        if (activeProviderId === 'netease') {
-            onLogout();
-            return;
-        }
-        await omni.logout(activeProviderId);
-        clearProviderAccount(activeProviderId);
-    };
+    // The signed-in account of the active provider; App owns the logout flow.
+    const activeUser = user;
+    const handleLogout = () => onLogout();
 
     return (
         <motion.div

@@ -50,8 +50,6 @@ declare global {
     mimeType?: string | null;
   }
 
-  type ElectronKugouOperation = import('./services/onlineMusic/kugouTransport').KugouOperation;
-
   interface ElectronAudioCacheStats {
     size: number;
     count: number;
@@ -65,63 +63,12 @@ declare global {
     bodyText: string;
   }
 
-  interface ElectronNeteaseApiStatus {
-    status: 'starting' | 'running' | 'error';
-    port: number | null;
-    error: string | null;
-    updatedAt: number;
-  }
-
-  // 主进程记录的网易登录诊断（electron/neteaseLoginDiagnostics.cjs），只含可公开贴出的字段。
-  interface ElectronNeteaseLoginRequestRecord {
-    at: number;
-    uri: string;
-    crypto: string;
-    ipHeader: 'none' | 'random-cn' | 'client' | 'real-ip';
-    deviceIdTail: string;
-    hasMusicU: boolean;
-    hasMusicA: boolean;
-    durationMs: number | null;
-    outcome: {
-      settled: 'pending' | 'resolved' | 'rejected';
-      status: number | null;
-      code: number | string | null;
-      message: string;
-    };
-  }
-
-  interface ElectronNeteaseLoginDiagnostics {
-    app: { version: string; electron: string; platform: string; arch: string; osRelease: string };
-    apiStatus: { status: ElectronNeteaseApiStatus['status']; port: number | null; error: string | null };
-    capturedAt: number;
-    startup: {
-      anonymousTokenAtLoad?: 'present' | 'empty';
-      runtimeInitializedAt?: number;
-      xeapiKeySource?: 'network' | 'cache';
-      xeapiKeyVersion?: string;
-      anonymousTokenRefreshed?: boolean;
-      listenHost?: string;
-      listenPort?: number;
-    };
-    network: {
-      interfaces: Array<{ name: string; ipv4: boolean; globalIpv6: boolean }>;
-      globalIpv6Count: number;
-    };
-    requests: ElectronNeteaseLoginRequestRecord[];
-  }
-
   // `unavailable` means the packaged build shipped without the bundled qq-music-api.
   interface ElectronQqApiStatus {
     status: 'starting' | 'running' | 'error' | 'unavailable';
     port: number | null;
     error: string | null;
     updatedAt: number;
-  }
-
-  interface ElectronKugouApiStatus {
-    available: boolean;
-    authenticated: boolean;
-    error: string | null;
   }
 
   interface ElectronTaskbarControlState {
@@ -335,23 +282,6 @@ declare global {
     formatHint?: 'lrc' | 'enhanced-lrc' | 'vtt' | 'ttml' | 'yrc' | 'qrc' | 'krc';
   }
 
-  interface StageNeteaseLyricBranch {
-    lyric?: string;
-    pureMusic?: boolean;
-  }
-
-  interface StageNeteaseLyricSource {
-    type: 'netease';
-    lrc?: StageNeteaseLyricBranch & {
-      yrc?: StageNeteaseLyricBranch;
-      ytlrc?: StageNeteaseLyricBranch;
-    };
-    yrc?: StageNeteaseLyricBranch;
-    ytlrc?: StageNeteaseLyricBranch;
-    tlyric?: StageNeteaseLyricBranch;
-    pureMusic?: boolean;
-  }
-
   interface StageNavidromeStructuredLyricLine {
     start?: number;
     value?: string;
@@ -372,7 +302,6 @@ declare global {
   type StageLyricSource =
     | StageEmbeddedLyricSource
     | StageLocalLyricSource
-    | StageNeteaseLyricSource
     | StageNavidromeLyricSource
     | StageQrcLyricSource;
 
@@ -402,30 +331,6 @@ declare global {
   }
 
   type StageSession = StageMediaSession;
-
-  interface StageSearchResult {
-    songId: number;
-    title: string;
-    artists: string[];
-    album: string;
-    durationMs: number | null;
-    coverUrl: string | null;
-  }
-
-  interface StageExternalPlayRequest {
-    requestId: string;
-    songId: number;
-    appendToQueue?: boolean;
-  }
-
-  interface StageExternalPlayResult {
-    requestId: string;
-    ok: boolean;
-    error?: string | null;
-    baseSnapshot?: StagePlayerSnapshot;
-    snapshot?: StagePlayerSnapshot;
-    result?: unknown;
-  }
 
   interface StageStatus {
     domain?: 'stage-input';
@@ -782,16 +687,6 @@ declare global {
           body?: string;
         },
       ) => Promise<ElectronLyricProxyResponse>;
-      getNeteasePort: () => Promise<number>;
-      getNeteaseApiStatus: () => Promise<ElectronNeteaseApiStatus>;
-      getNeteaseLoginDiagnostics?: () => Promise<ElectronNeteaseLoginDiagnostics>;
-      restartNeteaseApi: () => Promise<ElectronNeteaseApiStatus>;
-      onNeteaseApiStatusChanged: (callback: (status: ElectronNeteaseApiStatus) => void) => () => void;
-      getKugouApiStatus: () => Promise<ElectronKugouApiStatus>;
-      kugouRequest: (
-        operation: ElectronKugouOperation,
-        params?: Record<string, string | number | boolean | undefined>,
-      ) => Promise<unknown>;
       getQqPort: () => Promise<number | null>;
       getQqApiStatus: () => Promise<ElectronQqApiStatus>;
       onQqApiStatusChanged: (callback: (status: ElectronQqApiStatus) => void) => () => void;
@@ -874,13 +769,11 @@ declare global {
       setStageEnabled: (enabled: boolean) => Promise<StageStatus>;
       regenerateStageToken: () => Promise<StageStatus>;
       clearStageState: () => Promise<StageStatus>;
-      completeStageExternalPlayRequest: (result: StageExternalPlayResult) => Promise<boolean>;
       publishStagePlayerSnapshot: (snapshot: StagePlayerSnapshot, options?: { forcePlaybackEvent?: boolean }) => Promise<StagePlayerSnapshot>;
       completeStagePlayerControlRequest: (result: StagePlayerRequestResult) => Promise<boolean>;
       completeStagePlayerQueueRequest: (result: StagePlayerRequestResult) => Promise<boolean>;
       onStageSessionUpdated: (callback: (status: StageStatus) => void) => () => void;
       onStageSessionCleared: (callback: (status: StageStatus) => void) => () => void;
-      onStageExternalPlayRequest: (callback: (request: StageExternalPlayRequest) => void) => () => void;
       onStagePlayerControlRequest: (callback: (request: StagePlayerControlRequest) => void) => () => void;
       onStagePlayerQueueRequest: (callback: (request: StagePlayerQueueRequest) => void) => () => void;
       mods?: {

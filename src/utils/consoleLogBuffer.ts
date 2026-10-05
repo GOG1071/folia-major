@@ -21,7 +21,7 @@ export interface ConsoleLogEntry {
 /**
  * The subsystem a line came from, read off the `[Prefix]` almost every call site already writes.
  *
- * Free structure: `[Automix]`, `[Prefetch]`, `[KugouLibrary]` and the rest are a convention the
+ * Free structure: `[Automix]`, `[Prefetch]`, `[QQLibrary]` and the rest are a convention the
  * whole app follows, and nothing was reading them. Recorded per line rather than re-parsed per
  * render because it is a property OF the line and never changes after it is written.
  *

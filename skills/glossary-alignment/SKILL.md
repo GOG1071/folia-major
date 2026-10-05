@@ -66,7 +66,7 @@ description: Use when the user refers to repository-specific spoken terms - home
 | 口头说法 | 名字 |
 | --- | --- |
 | 在线歌曲的一切（搜索/歌词/音频/歌单/账户） | `omni` —— 这是公共边界，普通调用只经过它 |
-| 网易云 / 酷狗 provider | `neteaseProvider`、`kugouProvider`、`kugouTransport` —— 实现边界，UI/hook/store 不应直连 |
+| QQ 音乐 provider | `qqProvider`、`qqTransport` —— 实现边界，UI/hook/store 不应直连 |
 | provider 注册 / 账号缓存 | `providerRegistry`、`providerAccountCache`、`providerStorage` |
 | Navidrome / Subsonic | `navidromeService` —— **不是** Omni provider |
 
@@ -89,7 +89,7 @@ description: Use when the user refers to repository-specific spoken terms - home
 | --- | --- |
 | 同步 / R2 / 主题 registry | `syncCoordinator`、`syncClient`、`syncRepository`、`settingsSnapshot`、`themeSyncRegistry` |
 | IndexedDB / 各类缓存 | `appDatabase`、`binaryAssetStore`、`coverCache`、`themeCache` |
-| Electron 主进程 / bridge | `electron/` 下的 `main.cjs`、`preload.cjs`、`stageApi.cjs`、`kugouApiBridge.cjs` |
+| Electron 主进程 / bridge | `electron/` 下的 `main.cjs`、`preload.cjs`、`stageApi.cjs` |
 | Sync Server | `sync-server/src/` 下的 `app.ts`（路由/协议）、`node.ts`、`cloudflare.ts`、`d1-emulator.ts`；Worker 包装在 `worker/index.ts` |
 | Docker Web stack | `deploy/docker/` |
 

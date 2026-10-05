@@ -9,8 +9,6 @@ COPY package.json package-lock.json .npmrc ./
 RUN npm ci
 
 COPY . .
-ENV VITE_NETEASE_API_BASE=/netease
-ENV VITE_KUGOU_API_BASE=/kugou
 ENV VITE_QQ_API_BASE=/qq
 ENV VITE_AI_PROVIDER=google
 ENV VERCEL_GIT_COMMIT_SHA=${VCS_REF}

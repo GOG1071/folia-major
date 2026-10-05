@@ -129,15 +129,15 @@ const PlayerBottomBarProbe: React.FC = () => {
             />
             <OnlineProviderSwitcher
                 providers={[{
-                    providerId: 'netease',
-                    displayName: 'NetEase Cloud Music',
-                    shortName: 'NetEase',
+                    providerId: 'qq',
+                    displayName: 'QQ Music',
+                    shortName: 'QQ',
                     availability: { configured: true },
                     status: 'anonymous',
                     user: null,
                     collections: [],
                 }]}
-                activeProviderId="netease"
+                activeProviderId="qq"
                 isDaylight={false}
                 onSelect={() => { }}
                 onLogout={() => { }}

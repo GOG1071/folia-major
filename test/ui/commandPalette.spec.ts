@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { APP_VERSION, GUIDE_VERSION_STORAGE_KEY, waitForAppMounted } from '../helpers/appState';
+import { APP_VERSION, GUIDE_VERSION_STORAGE_KEY, waitForAppMounted, withQqSourceRef } from '../helpers/appState';
 
 // test/ui/commandPalette.spec.ts
 // 覆盖命令面板的三类入口：默认匹配列表、surface 接管（音量 / 队列 / 模式选择器），
@@ -10,7 +10,7 @@ const QUEUE_FIXTURE = [
     { id: 2, name: 'Same Artist', artists: [{ id: 10, name: 'Alpha' }], album: { id: 21, name: 'Other Album' }, durationMs: 180_000 },
     { id: 3, name: 'Same Album', artists: [{ id: 11, name: 'Beta' }], album: { id: 20, name: 'Shared Album' }, durationMs: 180_000 },
     { id: 4, name: 'Other', artists: [{ id: 12, name: 'Gamma' }], album: { id: 22, name: 'Third Album' }, durationMs: 180_000 },
-];
+].map(withQqSourceRef);
 
 // Settings live in several domain stores now, so look the key up across them rather than
 // naming one store here — otherwise every further store split silently breaks these reads.
@@ -43,7 +43,7 @@ const seedApp = async (page: import('@playwright/test').Page, openPlayerOnLaunch
         localStorage.setItem('static_mode', 'true');
         localStorage.setItem(guideKey, version);
     }, [APP_VERSION, GUIDE_VERSION_STORAGE_KEY, openPlayerOnLaunch] as const);
-    await page.route('**/__mock_netease__/**', async (route) => {
+    await page.route('**/__mock_qq__/**', async (route) => {
         await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
     });
 };
@@ -306,74 +306,3 @@ test('execute mode reports an unknown key instead of guessing', async ({ page })
     await expect(palette(page)).toBeVisible();
 });
 
-const readPersonalFmSelection = (page: import('@playwright/test').Page) => page.evaluate(async () => {
-    const storeModulePath = '/src/stores/usePersonalFmModeStore.ts';
-    const { usePersonalFmModeStore } = await import(storeModulePath);
-    return usePersonalFmModeStore.getState().selection;
-});
-
-const openFmModeSurface = async (page: import('@playwright/test').Page) => {
-    await pressUntilPaletteOpens(page, 's');
-    await typeUntilRow(page, '私人 FM 模式', '私人 FM 模式');
-    await page.keyboard.press('Enter');
-    // Surface 是 React.lazy，dev 下要现拉 chunk。等它的第一行真的画出来，别赌一个时长。
-    await expect(palette(page).locator('[data-fm-option]').first()).toBeVisible();
-};
-
-test('fm mode picker selects scene mode straight from a scene pill', async ({ page }) => {
-    await openPlayerPage(page);
-    expect(await readPersonalFmSelection(page)).toEqual({ mode: 'DEFAULT', scene: null });
-
-    await openFmModeSurface(page);
-    // 模式行 5 个 + 场景 42 个，全部是同一种 pill。
-    await expect(palette(page).locator('[data-fm-option]')).toHaveCount(47);
-    await expect(palette(page).locator('[data-fm-option="fm-mode-pick-DEFAULT"][data-fm-selected="true"]')).toBeVisible();
-
-    await palette(page).locator('[data-fm-option="fm-scene-pick-SLEEP_HELP"]').click();
-
-    await expect.poll(() => readPersonalFmSelection(page)).toEqual({ mode: 'SCENE_RCMD', scene: 'SLEEP_HELP' });
-});
-
-test('fm mode picker filters to one section and walks it with arrows', async ({ page }) => {
-    await openPlayerPage(page);
-    await openFmModeSurface(page);
-
-    // 筛选后剩下的必须比全量少，也必须不为空——两头都钉住，才说明筛选真的生效过。
-    await paletteInput(page).fill('语');
-    const filtered = palette(page).locator('[data-fm-option]');
-    await expect.poll(() => filtered.count()).toBeGreaterThan(0);
-    await expect.poll(() => filtered.count()).toBeLessThan(47);
-
-    await paletteInput(page).fill('');
-    await expect(palette(page).locator('[data-fm-option]')).toHaveCount(47);
-
-    const activeOption = () => palette(page).locator('[data-fm-active="true"]').getAttribute('data-fm-option');
-    expect(await activeOption()).toBe('fm-mode-pick-DEFAULT');
-
-    // 左右一次一格。
-    await page.keyboard.press('ArrowRight');
-    expect(await activeOption()).toBe('fm-mode-pick-FAMILIAR');
-    await page.keyboard.press('ArrowLeft');
-    expect(await activeOption()).toBe('fm-mode-pick-DEFAULT');
-
-    // 上下走的是实际渲染出来的行。分类内部会折行（场景 2 行、曲风 3 行），按分类跳会漏掉
-    // 折下来的那几行，只能靠左右键够到——这里逐行断言，防止再退回按分类跳。
-    const rowHeads = await palette(page).locator('[data-fm-option]').evaluateAll(nodes => {
-        const rows = new Map<number, string>();
-        nodes.forEach(node => {
-            const top = Math.round(node.getBoundingClientRect().top);
-            if (!rows.has(top)) rows.set(top, (node as HTMLElement).dataset.fmOption ?? '');
-        });
-        return [...rows.entries()].sort((left, right) => left[0] - right[0]).map(([, id]) => id);
-    });
-    expect(rowHeads.length).toBeGreaterThan(5);
-
-    for (const head of rowHeads.slice(1)) {
-        await page.keyboard.press('ArrowDown');
-        expect(await activeOption()).toBe(head);
-    }
-    for (const head of [...rowHeads].reverse().slice(1)) {
-        await page.keyboard.press('ArrowUp');
-        expect(await activeOption()).toBe(head);
-    }
-});

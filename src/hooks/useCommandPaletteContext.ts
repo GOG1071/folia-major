@@ -25,7 +25,6 @@ import { useAudioSettingsStore } from '../stores/useAudioSettingsStore';
 import { useAutomixSettingsStore } from '../stores/useAutomixSettingsStore';
 import { useDesktopSettingsStore } from '../stores/useDesktopSettingsStore';
 import { useLyricSettingsStore } from '../stores/useLyricSettingsStore';
-import { usePersonalFmModeStore } from '../stores/usePersonalFmModeStore';
 import { usePlayerChromeSettingsStore } from '../stores/usePlayerChromeSettingsStore';
 import { useSleepTimerStore } from '../stores/useSleepTimerStore';
 import { useTypographySettingsStore } from '../stores/useTypographySettingsStore';
@@ -138,7 +137,6 @@ export const useCommandPaletteContext = (
     const canAddCurrentSongToPlaylist = useAddToPlaylistStore(state => state.availability.canAdd);
     const lyricStaffPolicy = useLyricSettingsStore(state => state.lyricStaffPolicy);
     const lyricStaffAbsorbMode = useLyricSettingsStore(state => state.lyricStaffAbsorbMode);
-    const personalFmSelection = usePersonalFmModeStore(state => state.selection);
     // Which surface the palette is opening over; commands that only apply to one of them gate on it.
     const latticeFocusAction = useLatticeControlsStore(state => state.focusCurrentSong);
     const view = useAppViewStore(state => state.view);
@@ -198,7 +196,7 @@ export const useCommandPaletteContext = (
         ambient,
         settingsSignals, chromeSignals, desktopSignals, automixSignals,
         sleepTimerSignals, latticeSignals, audioSignals, visualizerSignals,
-        lyricStaffPolicy, lyricStaffAbsorbMode, personalFmSelection, view, commandFilter, gridSurface, canAddCurrentSongToPlaylist,
+        lyricStaffPolicy, lyricStaffAbsorbMode, view, commandFilter, gridSurface, canAddCurrentSongToPlaylist,
         lyricSegmentationRecord, lyricSegmentationActions, latticeFocusAction,
     ]);
 };

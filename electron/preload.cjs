@@ -138,17 +138,6 @@ contextBridge.exposeInMainWorld('electron', {
     segmentLyrics: (lines) => ipcRenderer.invoke('segment-lyrics', lines),
     testAiConnection: (settings) => ipcRenderer.invoke('ai-test-connection', settings),
     fetchLyricProxy: (url, init) => ipcRenderer.invoke('lyric-proxy-fetch', url, init),
-    getNeteasePort: () => ipcRenderer.invoke('get-netease-port'),
-    getNeteaseApiStatus: () => ipcRenderer.invoke('get-netease-api-status'),
-    getNeteaseLoginDiagnostics: () => ipcRenderer.invoke('get-netease-login-diagnostics'),
-    restartNeteaseApi: () => ipcRenderer.invoke('restart-netease-api'),
-    onNeteaseApiStatusChanged: (callback) => {
-        const listener = (_event, status) => callback(status);
-        ipcRenderer.on('netease-api-status-changed', listener);
-        return () => ipcRenderer.removeListener('netease-api-status-changed', listener);
-    },
-    getKugouApiStatus: () => ipcRenderer.invoke('kugou-api-status'),
-    kugouRequest: (operation, params) => ipcRenderer.invoke('kugou-api-request', operation, params),
     getQqPort: () => ipcRenderer.invoke('get-qq-port'),
     getQqApiStatus: () => ipcRenderer.invoke('get-qq-api-status'),
     onQqApiStatusChanged: (callback) => {
@@ -274,7 +263,6 @@ contextBridge.exposeInMainWorld('electron', {
     setStageEnabled: (enabled) => ipcRenderer.invoke('stage-set-enabled', enabled),
     regenerateStageToken: () => ipcRenderer.invoke('stage-regenerate-token'),
     clearStageState: () => ipcRenderer.invoke('stage-clear-state'),
-    completeStageExternalPlayRequest: (result) => ipcRenderer.invoke('stage-complete-external-play', result),
     publishStagePlayerSnapshot: (snapshot, options) => ipcRenderer.invoke('stage-publish-player-snapshot', snapshot, options),
     completeStagePlayerControlRequest: (result) => ipcRenderer.invoke('stage-complete-player-control', result),
     completeStagePlayerQueueRequest: (result) => ipcRenderer.invoke('stage-complete-player-queue', result),
@@ -287,11 +275,6 @@ contextBridge.exposeInMainWorld('electron', {
         const listener = (_event, status) => callback(status);
         ipcRenderer.on('stage-session-cleared', listener);
         return () => ipcRenderer.removeListener('stage-session-cleared', listener);
-    },
-    onStageExternalPlayRequest: (callback) => {
-        const listener = (_event, request) => callback(request);
-        ipcRenderer.on('stage-external-play-request', listener);
-        return () => ipcRenderer.removeListener('stage-external-play-request', listener);
     },
     onStagePlayerControlRequest: (callback) => {
         const listener = (_event, request) => callback(request);

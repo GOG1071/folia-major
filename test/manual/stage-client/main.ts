@@ -4,19 +4,16 @@ import {
     buildStageClearRequest,
     buildStageHealthRequest,
     buildStageLyricsRequest,
-    buildStagePlayRequest,
     buildStagePlayerControlRequest,
     buildStagePlayerQueueGetRequest,
     buildStagePlayerQueueRequest,
     buildStagePlayerStatusRequest,
     buildStagePlayerTimeRequest,
     buildStagePlayerWebSocketUrl,
-    buildStageSearchRequest,
     buildStageSessionRequest,
     buildStageStatusRequest,
     type StageRequestBuildResult,
 } from '../../../src/utils/stageClientDemo';
-import type { StageSearchResult } from '../../../src/types';
 
 // Manual Stage API docs keep example snippets and live requests aligned
 // with the current local-only desktop protocol.
@@ -71,19 +68,6 @@ const sessionStatus = getElement<HTMLElement>('session-status');
 const sessionResponse = getElement<HTMLElement>('session-response');
 const sessionExampleJson = getElement<HTMLElement>('session-example-json');
 const sessionExampleMultipart = getElement<HTMLElement>('session-example-multipart');
-
-const searchQueryInput = getElement<HTMLInputElement>('search-query');
-const searchLimitInput = getElement<HTMLInputElement>('search-limit');
-const searchPreview = getElement<HTMLElement>('search-preview');
-const searchStatus = getElement<HTMLElement>('search-status');
-const searchResponse = getElement<HTMLElement>('search-response');
-const searchResults = getElement<HTMLDivElement>('search-results');
-const searchExample = getElement<HTMLElement>('search-example');
-
-const playPreview = getElement<HTMLElement>('play-preview');
-const playStatus = getElement<HTMLElement>('play-status');
-const playResponse = getElement<HTMLElement>('play-response');
-const playExample = getElement<HTMLElement>('play-example');
 
 const playerStatusPreview = getElement<HTMLElement>('player-status-preview');
 const playerStatusStatus = getElement<HTMLElement>('player-status-status');
@@ -253,29 +237,6 @@ const updateRequestResult = async (
     }
 };
 
-const renderSearchResults = (songs: StageSearchResult[]) => {
-    if (songs.length === 0) {
-        searchResults.innerHTML = '<div class="empty-state">No songs found.</div>';
-        return;
-    }
-
-    searchResults.innerHTML = songs.map((song) => `
-        <article class="stage-result-card" data-song-id="${song.songId}">
-            <div class="doc-head">
-                <div>
-                    <strong>${song.title}</strong>
-                    <p class="hint">${song.artists.join(' / ') || 'Unknown artist'}${song.album ? ` · ${song.album}` : ''}</p>
-                </div>
-                <div class="button-row">
-                    <button type="button" class="secondary" data-play-song="${song.songId}">Play In Folia</button>
-                    <button type="button" class="secondary" data-queue-song="${song.songId}">Add To Queue</button>
-                </div>
-            </div>
-            <pre class="request-preview compact">${syntaxHighlightJson(formatJson(song))}</pre>
-        </article>
-    `).join('');
-};
-
 const buildLyricsRequestFromInputs = () => buildStageLyricsRequest({
     baseUrl: baseUrlInput.value,
     token: tokenInput.value,
@@ -298,13 +259,6 @@ const buildSessionRequestFromInputs = () => buildStageSessionRequest({
     audioFile: audioFileInput.files?.[0] || null,
     lyricsFile: lyricsFileInput.files?.[0] || null,
     coverFile: coverFileInput.files?.[0] || null,
-});
-
-const buildSearchRequestFromInputs = () => buildStageSearchRequest({
-    baseUrl: baseUrlInput.value,
-    token: tokenInput.value,
-    query: searchQueryInput.value,
-    limit: Number(searchLimitInput.value) || 10,
 });
 
 const buildPlayerStatusRequestFromInputs = () => buildStagePlayerStatusRequest(baseUrlInput.value, tokenInput.value);
@@ -380,13 +334,6 @@ const renderLiveExamples = () => {
             },
         };
     });
-    renderExample(searchExample, buildSearchRequestFromInputs);
-    renderExample(playExample, () => buildStagePlayRequest({
-        baseUrl: baseUrlInput.value,
-        token: tokenInput.value,
-        songId: 123456,
-        appendToQueue: false,
-    }));
     renderExample(playerStatusExample, buildPlayerStatusRequestFromInputs);
     renderExample(playerTimeExample, buildPlayerTimeRequestFromInputs);
     renderExample(playerControlExample, buildPlayerControlRequestFromInputs);
@@ -422,12 +369,6 @@ const renderStaticPreviews = () => {
         renderRequestPreview(sessionPreview, buildSessionRequestFromInputs());
     } catch (error) {
         renderExampleError(sessionPreview, error);
-    }
-
-    try {
-        renderRequestPreview(searchPreview, buildSearchRequestFromInputs());
-    } catch (error) {
-        renderExampleError(searchPreview, error);
     }
 
     try {
@@ -490,36 +431,6 @@ const runSessionRequest = async () => {
     const request = buildSessionRequestFromInputs();
     renderRequestPreview(sessionPreview, request);
     await updateRequestResult(sessionStatus, sessionResponse, request);
-};
-
-const runSearchRequest = async () => {
-    const request = buildSearchRequestFromInputs();
-    renderRequestPreview(searchPreview, request);
-    searchStatus.innerHTML = '<span class="status-sending">Sending...</span>';
-
-    try {
-        const response = await fetch(request.endpoint, request.init);
-        const payload = await response.json();
-        const statusClass = response.ok ? 'status-ok' : 'status-error';
-        searchStatus.innerHTML = `<span class="${statusClass}">${response.status} ${response.statusText}</span>`;
-        searchResponse.innerHTML = syntaxHighlightJson(formatJson(payload));
-        renderSearchResults(Array.isArray(payload?.songs) ? payload.songs : []);
-    } catch (error) {
-        searchStatus.innerHTML = '<span class="status-error">Request failed.</span>';
-        searchResponse.textContent = error instanceof Error ? error.message : String(error);
-        renderSearchResults([]);
-    }
-};
-
-const runPlayRequest = async (songId: number, appendToQueue = false) => {
-    const request = buildStagePlayRequest({
-        baseUrl: baseUrlInput.value,
-        token: tokenInput.value,
-        songId,
-        appendToQueue,
-    });
-    renderRequestPreview(playPreview, request);
-    await updateRequestResult(playStatus, playResponse, request);
 };
 
 const runPlayerStatusRequest = async () => {
@@ -644,14 +555,6 @@ getElement<HTMLButtonElement>('push-session').addEventListener('click', () => {
     });
 });
 
-getElement<HTMLButtonElement>('run-search').addEventListener('click', () => {
-    void runSearchRequest().catch((error) => {
-        searchStatus.textContent = 'Request build failed.';
-        searchResponse.textContent = error instanceof Error ? error.message : String(error);
-        renderSearchResults([]);
-    });
-});
-
 getElement<HTMLButtonElement>('run-player-status').addEventListener('click', () => {
     void runPlayerStatusRequest().catch((error) => {
         playerStatusStatus.textContent = 'Request build failed.';
@@ -706,20 +609,6 @@ getElement<HTMLButtonElement>('clear-player-ws-log').addEventListener('click', (
     playerWsLog.textContent = 'No events yet.';
 });
 
-searchResults.addEventListener('click', (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) {
-        return;
-    }
-
-    const songId = Number(target.dataset.playSong || target.dataset.queueSong);
-    if (!Number.isInteger(songId) || songId <= 0) {
-        return;
-    }
-
-    void runPlayRequest(songId, target.dataset.queueSong === String(songId));
-});
-
 [
     baseUrlInput,
     tokenInput,
@@ -734,8 +623,6 @@ searchResults.addEventListener('click', (event) => {
     audioUrlInput,
     lyricsTextInput,
     lyricsFormatInput,
-    searchQueryInput,
-    searchLimitInput,
     playerControlActionInput,
     playerControlPositionInput,
     playerQueueActionInput,
@@ -757,4 +644,3 @@ searchResults.addEventListener('click', (event) => {
 });
 
 rerenderDocs();
-renderSearchResults([]);

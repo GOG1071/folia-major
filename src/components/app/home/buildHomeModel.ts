@@ -29,9 +29,6 @@ export type HomeModelDeps = {
     navigateToPlayer: HomeSurfaceProps['onBackToPlayer'];
     navigateToLattice: NonNullable<HomeSurfaceProps['onOpenLattice']>;
     refreshOnlineProviderPlaylists: () => Promise<unknown>;
-    user: HomeSurfaceProps['user'];
-    playlists: HomeSurfaceProps['playlists'];
-    cloudPlaylist?: HomeSurfaceProps['cloudPlaylist'];
     focusedPlaylistIndex?: HomeSurfaceProps['focusedPlaylistIndex'];
     setFocusedPlaylistIndex?: HomeSurfaceProps['setFocusedPlaylistIndex'];
     navigateToSearch: (args: { query: string; sourceTab: SearchSource; replace?: boolean }) => void;
@@ -68,9 +65,6 @@ export const buildHomeModel = ({
     navigateToPlayer,
     navigateToLattice,
     refreshOnlineProviderPlaylists,
-    user,
-    playlists,
-    cloudPlaylist,
     currentSong,
     focusedPlaylistIndex,
     setFocusedPlaylistIndex,
@@ -110,9 +104,10 @@ export const buildHomeModel = ({
             onBackToPlayer: navigateToPlayer,
             onOpenLattice: navigateToLattice,
             onRefreshUser: () => refreshOnlineProviderPlaylists(),
-            user: onlineProviderPlatform?.activeProvider?.user ?? user,
-            playlists: onlineProviderPlatform?.activeProvider?.collections.filter(collection => collection.type !== 'cloud') ?? playlists,
-            cloudPlaylist: onlineProviderPlatform?.activeProvider?.collections.find(collection => collection.type === 'cloud') ?? cloudPlaylist,
+            // The signed-in account and its collections come from the active provider's snapshot.
+            user: onlineProviderPlatform?.activeProvider?.user ?? null,
+            playlists: onlineProviderPlatform?.activeProvider?.collections.filter(collection => collection.type !== 'cloud') ?? [],
+            cloudPlaylist: onlineProviderPlatform?.activeProvider?.collections.find(collection => collection.type === 'cloud') ?? null,
             currentTrack: currentSong,
             onPlayAll: playAll,
             onAddAllToQueue: addAllToQueue,

@@ -557,7 +557,8 @@ test('控制面板那两章：模式列表压下来，FM 下这一格换成电�
     const activeIndex = await stage.locator('[data-ponder-surface-state="fm-tab"] [data-ponder-panel-tab]')
         .evaluateAll(nodes => nodes.findIndex(node => node.hasAttribute('data-active')));
     expect(activeIndex).toBe(2);
-    await expect(stage.locator('[data-ponder-panel-fm-mode]')).toBeVisible();
+    // 电台模式胶囊随网易云/酷狗的私人 FM 一起移除了，这一页只剩传送和扔掉/喜欢两块。
+    await expect(stage.locator('[data-ponder-panel-fm-transport]')).toBeVisible();
 });
 
 test('字幕底色不透明，且压在外框和浮层卡之上', async ({ page }) => {

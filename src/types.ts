@@ -151,23 +151,6 @@ export interface StageLocalLyricSource {
   formatHint?: 'lrc' | 'enhanced-lrc' | 'vtt' | 'ttml' | 'yrc' | 'qrc' | 'krc';
 }
 
-export interface StageNeteaseLyricBranch {
-  lyric?: string;
-  pureMusic?: boolean;
-}
-
-export interface StageNeteaseLyricSource {
-  type: 'netease';
-  lrc?: StageNeteaseLyricBranch & {
-    yrc?: StageNeteaseLyricBranch;
-    ytlrc?: StageNeteaseLyricBranch;
-  };
-  yrc?: StageNeteaseLyricBranch;
-  ytlrc?: StageNeteaseLyricBranch;
-  tlyric?: StageNeteaseLyricBranch;
-  pureMusic?: boolean;
-}
-
 export interface StageNavidromeStructuredLyricLine {
   start?: number;
   value?: string;
@@ -188,7 +171,6 @@ export interface StageQrcLyricSource {
 export type StageLyricSource =
   | StageEmbeddedLyricSource
   | StageLocalLyricSource
-  | StageNeteaseLyricSource
   | StageNavidromeLyricSource
   | StageQrcLyricSource;
 
@@ -218,30 +200,6 @@ export interface StageMediaSession {
 }
 
 export type StageSession = StageMediaSession;
-
-export interface StageSearchResult {
-  songId: number;
-  title: string;
-  artists: string[];
-  album: string;
-  durationMs: number | null;
-  coverUrl: string | null;
-}
-
-export interface StageExternalPlayRequest {
-  requestId: string;
-  songId: number;
-  appendToQueue?: boolean;
-}
-
-export interface StageExternalPlayResult {
-  requestId: string;
-  ok: boolean;
-  error?: string | null;
-  baseSnapshot?: StagePlayerSnapshot;
-  snapshot?: StagePlayerSnapshot;
-  result?: unknown;
-}
 
 export interface StageStatus {
   domain?: 'stage-input';
@@ -1144,29 +1102,6 @@ export interface StatusMessage {
   persistent?: boolean;
 }
 
-// Netease / Search API Types
-
-export interface NeteaseUser {
-  userId: number;
-  nickname: string;
-  avatarUrl: string;
-  backgroundUrl?: string;
-  vipType?: number;
-}
-
-export interface NeteasePlaylist {
-  id: number;
-  name: string;
-  coverImgUrl: string;
-  trackCount: number;
-  playCount: number;
-  updateTime: number;
-  trackUpdateTime: number;
-  creator: NeteaseUser;
-  description?: string;
-  specialType?: 'cloud';
-}
-
 export interface Artist {
   id: MediaId;
   name: string;
@@ -1182,27 +1117,9 @@ export interface Album {
   catalogRef?: ProviderCatalogRef;
 }
 
-export interface SongPrivilege {
-  id?: number;
-  fee?: number;
-  payed?: number;
-  st?: number;
-  pl?: number;
-  dl?: number;
-  flag?: number;
-  cs?: boolean;
-}
-
-export interface NoCopyrightRecommendation {
-  type?: number;
-  typeDesc?: string;
-  songId?: string | number;
-  thirdPartySong?: unknown | null;
-  expInfo?: unknown | null;
-}
-
-export type LyricProviderSource = 'netease' | 'qq' | 'kugou' | 'amll';
-export type AmllDbPlatform = 'ncm' | 'qq';
+// QQ Music is the only online lyric source. Values persisted by older builds ('netease', 'kugou', 'amll')
+// are normalised away on read (see normalizeLyricProviderSource in utils/lyrics/sourcePriority.ts).
+export type LyricProviderSource = 'qq';
 
 export interface ReplayGainInfo {
   /** ReplayGain gain values in decibels. */
@@ -1222,22 +1139,13 @@ export interface SongResult {
   isPureMusic?: boolean;
   aliases?: string[];
   translatedNames?: string[];
-  t?: 0 | 1 | 2;
-  sourceType?: 'netease' | 'cloud';
   sourceRef?: PlaybackSourceRef;
   /** Identity of the concrete bytes selected for playback; used to reject stale derived media. */
   playbackSourceRevision?: string;
-  fee?: number;
-  noCopyrightRcmd?: NoCopyrightRecommendation | null;
-  resourceState?: boolean;
-  privilege?: SongPrivilege;
   onlineLyricsState?: OnlineLyricsState;
   matchedLyricsSource?: LyricProviderSource;
-  matchedLyricsProviderPlatform?: AmllDbPlatform;
   replayGain?: ReplayGainInfo;
   qqMid?: string;
-  kgHash?: string;
-  amllDbPlatform?: AmllDbPlatform;
 }
 
 export interface OnlineLyricsState {
@@ -1249,15 +1157,6 @@ export interface OnlineLyricsState {
   matchedSongId?: MediaId;
   matchedIsPureMusic?: boolean;
   matchedLyricsSource?: LyricProviderSource;
-  matchedLyricsProviderPlatform?: AmllDbPlatform;
-}
-
-export interface SearchResponse {
-  result?: {
-    songs?: SongResult[];
-    songCount?: number;
-  };
-  code: number;
 }
 
 // Local Music Types
@@ -1307,7 +1206,6 @@ export interface LocalSong {
   folderName?: string; // Name of the folder if imported via folder import
   noAutoMatch?: boolean; // If true, do not attempt to auto-match metadata
   matchedLyricsSource?: LyricProviderSource;
-  matchedLyricsProviderPlatform?: AmllDbPlatform;
 
   // User preferences for online data override (set via LyricMatchModal)
   lyricsSource?: 'local' | 'embedded' | 'online';  // Explicit lyrics source selection; undefined = the configured automatic priority

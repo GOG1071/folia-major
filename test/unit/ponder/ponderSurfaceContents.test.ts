@@ -233,8 +233,7 @@ describe('PonderSurfaceContents', () => {
         expect(markup).toContain('data-ponder-panel-mode-list-footer');
         expect(markup).toContain('data-ponder-surface-state="controls-mode-list"');
 
-        // 电台页没有队列行，只有一枚模式胶囊、三颗传送和一对喜欢/扔掉。
-        expect(markup).toContain('data-ponder-panel-fm-mode');
+        // 电台页没有队列行，只有三颗传送和一对喜欢/扔掉。
         expect(markup).toContain('data-ponder-panel-fm-transport');
         expect(markup.match(/data-ponder-panel-fm-action(?![-a-z])/g)).toHaveLength(2);
         expect(markup).toContain('data-ponder-surface-state="fm-tab"');

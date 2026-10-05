@@ -54,7 +54,7 @@ describe('local-library entity editor model', () => {
         const suggestions = buildEntityNameSuggestions('artist', [
             createSong('one', {
                 importedMetadata: { title: 'one', titleSource: 'filename', artistNames: ['小山百代', '三森すずこ'] },
-                onlineMetadata: { source: 'netease', artists: [{ name: '三森すずこ' }], matchMode: 'manual', matchedAt: 1 },
+                onlineMetadata: { source: 'qq', artists: [{ name: '三森すずこ' }], matchMode: 'manual', matchedAt: 1 },
             }),
             createSong('two', { embeddedArtist: '三森すずこ' }),
         ]);

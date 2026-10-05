@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { APP_VERSION, GUIDE_VERSION_STORAGE_KEY, waitForAppMounted } from '../helpers/appState';
+import { APP_VERSION, GUIDE_VERSION_STORAGE_KEY, waitForAppMounted, withQqSourceRef } from '../helpers/appState';
 
 // test/ui/commandPaletteSizing.spec.ts
 // 命令面板同时是携带 UI 的命令（surface）的画布，所以面板的外框尺寸是一条硬契约：
@@ -14,7 +14,7 @@ const QUEUE_FIXTURE = [
     { id: 1, name: 'Current', artists: [{ id: 10, name: 'Alpha' }], album: { id: 20, name: 'Shared Album' }, durationMs: 180_000 },
     { id: 2, name: 'Same Artist', artists: [{ id: 10, name: 'Alpha' }], album: { id: 21, name: 'Other Album' }, durationMs: 180_000 },
     { id: 3, name: 'Same Album', artists: [{ id: 11, name: 'Beta' }], album: { id: 20, name: 'Shared Album' }, durationMs: 180_000 },
-];
+].map(withQqSourceRef);
 
 /** 对应 src/components/command-palette/pinnedCommandPreferences.ts */
 const PINNED_COMMANDS_STORAGE_KEY = 'command_palette_pinned_commands_v1';
@@ -43,7 +43,7 @@ const seedApp = async (page: Page, pinnedCommandIds: PinnedSlots) => {
         localStorage.setItem(pinnedKey, JSON.stringify(pinned));
     }, [APP_VERSION, GUIDE_VERSION_STORAGE_KEY, PINNED_COMMANDS_STORAGE_KEY, pinnedCommandIds] as const);
 
-    await page.route('**/__mock_netease__/**', async (route) => {
+    await page.route('**/__mock_qq__/**', async (route) => {
         await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
     });
 };

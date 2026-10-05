@@ -7,7 +7,7 @@ import { useHomeLayoutSettingsStore } from '../../stores/useHomeLayoutSettingsSt
 import { useReducedMotionFor } from '../../hooks/useReducedMotionFor';
 
 // src/components/folia-grid/Grid3DSlider.tsx
-// Controlled desktop Grid3D slider shared by Netease, local music, and Navidrome overview surfaces.
+// Controlled desktop Grid3D slider shared by online, local music, and Navidrome overview surfaces.
 
 export interface Grid3DSliderItem {
     id: string | number;

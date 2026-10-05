@@ -23,8 +23,6 @@ type OnlineProviderSwitcherProps = {
 
 // 在线平台使用统一的纯色圆形文字徽章。
 const AVATAR_BADGE_BY_PROVIDER: Record<string, { label: string; iconUrl?: string; className: string }> = {
-    netease: { label: '云', className: 'bg-red-600' },
-    kugou: { label: 'K', className: 'bg-blue-600' },
     qq: { label: 'Q', className: 'bg-green-600' },
 };
 

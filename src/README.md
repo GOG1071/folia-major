@@ -67,7 +67,7 @@ App.tsx
 ### Hooks and stores
 
 - 播放桥接：`usePlaybackAudioBridge`、`usePlaybackTransportController`、`usePlaybackQueueController`、`usePlaybackInteractionBridge`、`usePlaybackUiEffects`、`usePlaybackVisualizerBridge`。
-- 本地和在线库：`useLocalLibraryCatalog`、`useNeteaseLibrary`、`useKugouLibrary`、`useQqLibrary`、`useOnlineProviderPlatform`、`useOnlineProviderQrLogin`。
+- 本地和在线库：`useLocalLibraryCatalog`、`useAppCacheManager`、`useQqLibrary`、`useOnlineProviderPlatform`、`useOnlineProviderQrLogin`。
 - 外部 surface：`useStagePlaybackController`、`useNowPlayingSource`、`usePlayerCapSource`、`useObsBrowserSourcePublisher`。
 - 恢复、主题和窗口：`useSessionRestoreController`、`useThemeController`、`useAppPreferences`、Electron bridge hooks。
 - 导航/搜索/集合：`useAppNavigation.ts`、`useSearchNavigationStore.ts`、`useCollectionNavigationStore.ts`。
@@ -110,7 +110,7 @@ App.tsx
 ## External and server boundaries
 
 - Stage：`hooks/useStagePlaybackController.ts`、`utils/appStageHelpers.ts`、`utils/stageClientDemo.ts`、`utils/stagePlayerSnapshot.ts`、`electron/stageApi.cjs`。
-- Electron：`electron/main.cjs`、`preload.cjs`、`kugouApiBridge.cjs`、`updateChannels.cjs`、`windowPlaybackHandoff.cjs`。
+- Electron：`electron/main.cjs`、`preload.cjs`、`updateChannels.cjs`、`windowPlaybackHandoff.cjs`。
 - Web API handlers：`api/`（部署入口）与 `api-ts/`（TypeScript 源码）；主题/代理公共代码在 `shared/`。
 - Sync Server：`sync-server/src/app.ts`（路由与协议）、`src/node.ts`、`src/cloudflare.ts`、`src/d1-emulator.ts`；Worker 包装在根 `worker/index.ts`。
 

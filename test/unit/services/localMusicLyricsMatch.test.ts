@@ -3,14 +3,12 @@ import type { LocalSong } from '@/types';
 import { matchLyrics } from '@/services/localMusicService';
 import { autoMatchBestLyric } from '@/utils/lyrics/autoMatchBestLyric';
 import { applyMatchedMetadata } from '@/services/localLibraryCatalogService';
-import { neteaseApi } from '@/services/netease';
 import { getLocalLibraryCatalogSnapshot } from '@/services/localLibraryEntityRepository';
 
 // test/unit/services/localMusicLyricsMatch.test.ts
 
 const lyricSettings = vi.hoisted(() => ({
     autoUseBestLyric: true,
-    preferredAlternativeLyricSource: 'amll',
     localLyricsPriority: 'local' as 'local' | 'online',
 }));
 
@@ -18,13 +16,6 @@ vi.mock('@/utils/lyrics/autoMatchBestLyric', () => ({ autoMatchBestLyric: vi.fn(
 vi.mock('@/services/localLibraryCatalogService', () => ({ applyMatchedMetadata: vi.fn() }));
 vi.mock('@/services/localLibraryEntityRepository', () => ({
     getLocalLibraryCatalogSnapshot: vi.fn().mockResolvedValue({ entities: [], assignments: [] }),
-}));
-vi.mock('@/services/netease', () => ({
-    neteaseApi: {
-        cloudSearch: vi.fn(),
-        getLyric: vi.fn(),
-        getSongDetail: vi.fn(),
-    },
 }));
 // Lyric sourcing moved to its own store; this suite drives it through the same fixture.
 vi.mock('@/stores/useLyricSettingsStore', () => ({
@@ -41,7 +32,7 @@ const song = (): LocalSong => ({
     titleOrigin: 'manual-match',
     importedMetadata: { title: 'Wrong title', titleSource: 'filename', artistNames: ['Wrong artist'], albumName: 'Wrong album' },
     onlineMetadata: {
-        source: 'netease', songId: 987, title: 'Correct title', artists: [{ name: 'Correct artist' }],
+        source: 'qq', songId: '987', title: 'Correct title', artists: [{ name: 'Correct artist' }],
         album: { name: 'Correct album' }, matchMode: 'manual', matchedAt: 1,
     },
     duration: 200000,
@@ -62,7 +53,7 @@ describe('localMusicService lyric matching', () => {
         const lyrics = { lines: [], isWordByWord: true };
         vi.mocked(autoMatchBestLyric).mockResolvedValue({
             lyrics,
-            source: 'netease',
+            source: 'qq',
             id: 987,
             song: {
                 id: 987,
@@ -78,15 +69,13 @@ describe('localMusicService lyric matching', () => {
 
         expect(autoMatchBestLyric).toHaveBeenCalledWith('Correct title', 'Correct artist', 200000, {
             album: 'Correct album',
-            preferredSource: 'amll',
-            metadataCandidate: { source: 'netease', songId: 987 },
+            metadataCandidate: { source: 'qq', songId: '987' },
             exactMatchOnly: false,
         });
-        expect(neteaseApi.cloudSearch).not.toHaveBeenCalled();
         expect(applyMatchedMetadata).toHaveBeenCalledWith('local-song', {}, expect.objectContaining({
             lyricsOnly: true,
             songPatch: expect.objectContaining({
-                onlineMetadata: expect.objectContaining({ source: 'netease', songId: 987 }),
+                onlineMetadata: expect.objectContaining({ source: 'qq', songId: '987' }),
                 matchedLyricsSongId: 987,
             }),
         }));
@@ -97,7 +86,7 @@ describe('localMusicService lyric matching', () => {
         const lyrics = { lines: [], isWordByWord: true };
         vi.mocked(autoMatchBestLyric).mockResolvedValue({
             lyrics,
-            source: 'netease',
+            source: 'qq',
             id: 987,
             song: {
                 id: 987,
@@ -116,7 +105,6 @@ describe('localMusicService lyric matching', () => {
         await expect(matchLyrics(localSong)).resolves.toBe(lyrics);
 
         expect(autoMatchBestLyric).toHaveBeenCalledWith('Correct title', 'Correct artist', 200000, expect.objectContaining({
-            preferredSource: 'amll',
         }));
         expect(localSong.matchedLyrics).toBe(lyrics);
     });

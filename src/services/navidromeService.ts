@@ -650,7 +650,7 @@ export const navidromeApi = {
         };
 
         return {
-            // Use negative ID to avoid conflicts with Netease IDs
+            // Use negative ID to avoid conflicts with numeric online provider IDs
             id: -Math.abs(parseInt(song.id.replace(/\D/g, ''), 10) || Date.now()),
             name: song.title,
             artists: displayArtists,

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, Loader2, X, Music, Check } from 'lucide-react';
-import { AmllDbPlatform, LyricProviderSource, SongResult, LyricData } from '../../types';
+import { LyricProviderSource, SongResult, LyricData } from '../../types';
 import { NavidromeSong } from '../../types/navidrome';
 import type { MediaId } from '../../types/onlineMusic';
 import { saveToCache, getFromCacheWithMigration } from '../../services/db';
@@ -9,9 +9,8 @@ import { formatSongName } from '../../utils/songNameFormatter';
 import { migrateMatchedLyricsCarrierRenderHints } from '../../utils/lyrics/storageMigration';
 import { calculateMatchScore } from '../../utils/lyrics/matchScore';
 import { buildLyricSearchQuery } from '../../utils/lyrics/searchQuery';
-import { fetchLyricsForMatchSource, LYRIC_MATCH_SOURCES, searchLyricsByMatchSource, sourceSupportsManualSearch } from '../../utils/lyrics/lyricMatchSources';
+import { fetchLyricsForMatchSource, LYRIC_MATCH_SOURCES, searchLyricsByMatchSource } from '../../utils/lyrics/lyricMatchSources';
 import {
-    getLyricMatchSourceLabel,
     getMatchResultAlbumName,
     getMatchResultArtists,
     getMatchResultCoverUrl,
@@ -37,7 +36,6 @@ export interface NavidromeMatchData {
     noAutoMatch?: boolean;
     hasManualLyricSelection?: boolean;
     matchedLyricsSource?: LyricProviderSource;
-    matchedLyricsProviderPlatform?: AmllDbPlatform;
 }
 
 interface NaviLyricMatchModalProps {
@@ -78,7 +76,8 @@ const NaviLyricMatchModal: React.FC<NaviLyricMatchModalProps> = ({ song, onClose
 
     // Online data toggle state
     const [lyricsSource, setLyricsSource] = useState<'navi' | 'online'>('online');
-    const [source, setSource] = useState<LyricMatchSource>('netease');
+    // QQ Music is the only lyric match source, so there is nothing to switch between.
+    const source: LyricMatchSource = LYRIC_MATCH_SOURCES[0];
 
     const navidromeMetadata = getProviderSongMetadata(song);
     const navidromeArtist = navidromeMetadata.artists.map(a => a.name).join(', ');
@@ -111,9 +110,7 @@ const NaviLyricMatchModal: React.FC<NaviLyricMatchModalProps> = ({ song, onClose
     }, [song]);
 
     const handleSearch = async (query?: string) => {
-        const q = sourceSupportsManualSearch(source)
-            ? (query || searchQuery)
-            : buildLyricSearchQuery(songInfo.title, songInfo.artist, songInfo.album || '');
+        const q = query || searchQuery;
         if (!q.trim()) return;
 
         setIsSearching(true);
@@ -204,13 +201,9 @@ const NaviLyricMatchModal: React.FC<NaviLyricMatchModalProps> = ({ song, onClose
                 lyricsSource,
                 hasManualLyricSelection: true,
                 matchedLyricsSource: source,
-                matchedLyricsProviderPlatform: processed.matchedLyricsProviderPlatform,
+                useOnlineCover: false,
+                useOnlineMetadata: false,
             };
-
-            if (source !== 'netease') {
-                matchData.useOnlineCover = false;
-                matchData.useOnlineMetadata = false;
-            }
 
             await saveToCache(`navidrome_match_${song.navidromeData.id}`, matchData);
 
@@ -261,56 +254,32 @@ const NaviLyricMatchModal: React.FC<NaviLyricMatchModalProps> = ({ song, onClose
                     {/* LEFT PANEL */}
                     <div className={`w-[62%] flex flex-col border-r ${borderColor}`}>
                         <div className="p-4">
-                            <div className={`flex border-b ${borderColor} pb-2 mb-3.5 gap-4`}>
-                                {LYRIC_MATCH_SOURCES
-                                    .map(id => ({ id, label: getLyricMatchSourceLabel(id) }))
-                                    .map(t => {
-                                    const isSelected = source === t.id;
-                                    const activeTabClass = isSelected
-                                        ? isDaylight
-                                            ? 'border-blue-500 text-blue-600 font-semibold'
-                                            : 'border-blue-400 text-blue-300 font-semibold'
-                                        : 'border-transparent text-zinc-400 hover:text-zinc-200';
-                                    return (
-                                        <button
-                                            key={t.id}
-                                            type="button"
-                                            onClick={() => setSource(t.id as any)}
-                                            className={`pb-2 border-b-2 text-sm transition-all px-1 cursor-pointer ${activeTabClass}`}
-                                        >
-                                            {t.label}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                            {sourceSupportsManualSearch(source) && (
-                                <form
-                                    onSubmit={(e) => {
-                                        e.preventDefault();
-                                        handleSearch();
-                                    }}
-                                    className="flex gap-3"
+                            <form
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handleSearch();
+                                }}
+                                className="flex gap-3"
+                            >
+                                <div className={`flex-1 flex items-center gap-3 rounded-2xl border px-4 py-3 ${inputBg}`}>
+                                    <Search size={18} className={`opacity-40 ${textSecondary}`} />
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder={t('localMusic.searchForSong')}
+                                        className={`flex-1 bg-transparent outline-none text-sm ${textPrimary}`}
+                                        autoFocus
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={isSearching}
+                                    className={`px-4 rounded-2xl text-sm font-medium transition-colors ${searchBtnBg}`}
                                 >
-                                    <div className={`flex-1 flex items-center gap-3 rounded-2xl border px-4 py-3 ${inputBg}`}>
-                                        <Search size={18} className={`opacity-40 ${textSecondary}`} />
-                                        <input
-                                            type="text"
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            placeholder={t('localMusic.searchForSong')}
-                                            className={`flex-1 bg-transparent outline-none text-sm ${textPrimary}`}
-                                            autoFocus
-                                        />
-                                    </div>
-                                    <button
-                                        type="submit"
-                                        disabled={isSearching}
-                                        className={`px-4 rounded-2xl text-sm font-medium transition-colors ${searchBtnBg}`}
-                                    >
-                                        {isSearching ? <Loader2 size={16} className="animate-spin" /> : t('localMusic.search')}
-                                    </button>
-                                </form>
-                            )}
+                                    {isSearching ? <Loader2 size={16} className="animate-spin" /> : t('localMusic.search')}
+                                </button>
+                            </form>
                         </div>
                         <div className="flex-1 overflow-y-auto custom-scrollbar px-4 pb-4">
                             {isSearching ? (
@@ -323,8 +292,8 @@ const NaviLyricMatchModal: React.FC<NaviLyricMatchModalProps> = ({ song, onClose
                             ) : (
                                 <div className="space-y-1.5">
                                     {searchResults.map((result) => {
-                                        const resultKey = `${source}-${result.amllDbPlatform ?? 'base'}-${result.id}`;
-                                        const selectedKey = selectedResult ? `${source}-${selectedResult.amllDbPlatform ?? 'base'}-${selectedResult.id}` : null;
+                                        const resultKey = `${source}-${result.id}`;
+                                        const selectedKey = selectedResult ? `${source}-${selectedResult.id}` : null;
                                         const resultCoverUrl = getMatchResultCoverUrl(result, source);
                                         const resultArtists = getMatchResultArtists(result);
                                         const resultAlbum = getMatchResultAlbumName(result);

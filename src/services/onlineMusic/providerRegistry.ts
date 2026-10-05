@@ -2,8 +2,6 @@ import { OnlineProviderError } from '../../types/onlineMusic';
 import type { OnlineMusicProvider, OnlineProviderId, ProviderCapabilities } from '../../types/onlineMusic';
 import type { SongResult } from '../../types';
 import { getPlaybackSourceRef } from '../../utils/appPlaybackGuards';
-import { neteaseProvider } from './neteaseProvider';
-import { kugouProvider } from './kugouProvider';
 import { qqProvider } from './qqProvider';
 
 // src/services/onlineMusic/providerRegistry.ts
@@ -77,6 +75,4 @@ export const requireOnlineMusicProviderForSong = (song: SongResult): OnlineMusic
     return requireOnlineMusicProvider(sourceRef.providerId);
 };
 
-registerOnlineMusicProvider(neteaseProvider);
-registerOnlineMusicProvider(kugouProvider);
 registerOnlineMusicProvider(qqProvider);

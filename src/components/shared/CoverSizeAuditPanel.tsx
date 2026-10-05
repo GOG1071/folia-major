@@ -15,7 +15,7 @@ import {
 // The point of the table is the verdict column. Everything downstream of `getSizedCoverUrl` assumes
 // a provider honours the size written into the URL; if one ignores it, the pictures still look
 // correct and the only trace is the bandwidth and decode cost the sizing was supposed to remove.
-// Netease is the one to watch, since `?param=NyN` is a query parameter a CDN is free to drop.
+// A CDN is free to drop a size query parameter, so the providers worth watching are the ones that size by query.
 
 const REFRESH_MS = 1500;
 
@@ -110,7 +110,7 @@ const formatMb = (bytes: number) => `${(bytes / 1048576).toFixed(1)}MB`;
 
 const CoverSizeAuditPanel: React.FC<{ isDaylight: boolean; panelClass: string }> = ({ isDaylight, panelClass }) => {
     const samples = useSyncExternalStore(subscribeToCoverSizeSamples, getCoverSizeSamples);
-    const [onlyNetease, setOnlyNetease] = useState(false);
+    const [onlyQq, setOnlyQq] = useState(false);
 
     // Dimensions are read only while this panel is mounted, so a session nobody is auditing never
     // pays for the probes at all. Installing here too is a safety net rather than the normal path:
@@ -124,8 +124,8 @@ const CoverSizeAuditPanel: React.FC<{ isDaylight: boolean; panelClass: string }>
     }, []);
 
     const groups = useMemo(
-        () => groupSamples(onlyNetease ? samples.filter(sample => sample.provider === 'netease') : samples),
-        [onlyNetease, samples],
+        () => groupSamples(onlyQq ? samples.filter(sample => sample.provider === 'qq') : samples),
+        [onlyQq, samples],
     );
     // Flattened across rows: an offender is worth seeing whatever bucket it landed in.
     const ignored = useMemo(() => groups.flatMap(group => group.ignoredSamples), [groups]);
@@ -144,8 +144,8 @@ const CoverSizeAuditPanel: React.FC<{ isDaylight: boolean; panelClass: string }>
                 <div className="text-[10px] uppercase tracking-[0.16em] opacity-60">Cover Sizes</div>
                 <div className="flex items-center gap-2 text-[10px]">
                     <label className="flex items-center gap-1 opacity-70">
-                        <input type="checkbox" checked={onlyNetease} onChange={event => setOnlyNetease(event.target.checked)} />
-                        netease only
+                        <input type="checkbox" checked={onlyQq} onChange={event => setOnlyQq(event.target.checked)} />
+                        qq only
                     </label>
                     <button type="button" className="underline opacity-70" onClick={clearCoverSizeSamples}>reset</button>
                 </div>

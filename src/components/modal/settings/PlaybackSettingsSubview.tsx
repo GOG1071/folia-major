@@ -1,20 +1,16 @@
 import React, { useState } from 'react';
-import { AudioLines, ChevronRight, ListFilter, Monitor, PlayCircle, Radio, RefreshCw, Settings2, Timer } from 'lucide-react';
+import { AudioLines, ChevronRight, ListFilter, Monitor, PlayCircle, RefreshCw, Settings2, Timer } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import type { LocalLyricsPriority, QueueAddBehavior, ReplayGainMode, Theme } from '../../../types';
 import { useAudioOutputDevices } from '../../../hooks/useAudioOutputDevices';
 import { CustomSelect } from '../../shared/CustomSelect';
-import { LYRIC_MATCH_SOURCES } from '../../../utils/lyrics/lyricMatchSources';
-import { getLyricProviderPreferenceLabel } from '../../../utils/lyrics/lyricSourceLabels';
 import TransitionSettingsSection from './TransitionSettingsSection';
 import LocalLyricFormatOrderSetting from './LocalLyricFormatOrderSetting';
 import { SettingsAnchor } from './navigation/SettingsAnchorContext';
 import SettingsSectionHeading from './navigation/SettingsSectionHeading';
 import { useLyricSettingsStore } from '../../../stores/useLyricSettingsStore';
 import { useAudioSettingsStore } from '../../../stores/useAudioSettingsStore';
-import { useOnlineProviderAccountStore } from '../../../stores/useOnlineProviderAccountStore';
-import { isNeteaseScrobbleReady } from '../../../services/onlineMusic/playbackReportGate';
 
 // src/components/modal/settings/PlaybackSettingsSubview.tsx
 // Playback behavior and output-device settings extracted from the global settings modal.
@@ -50,44 +46,31 @@ const PlaybackSettingsSubview: React.FC<PlaybackSettingsSubviewProps> = ({
     const {
         audioOutputDeviceId,
         enableTranscodeFallback,
-        neteaseScrobbleEnabled,
         playbackFadeEnabled,
         queueAddBehavior,
         onToggleTranscodeFallback,
-        onToggleNeteaseScrobble,
         onTogglePlaybackFade,
         onQueueAddBehaviorChange,
     } = useAudioSettingsStore(useShallow(state => ({
         audioOutputDeviceId: state.audioOutputDeviceId,
         enableTranscodeFallback: state.enableTranscodeFallback,
-        neteaseScrobbleEnabled: state.neteaseScrobbleEnabled,
         playbackFadeEnabled: state.playbackFadeEnabled,
         queueAddBehavior: state.queueAddBehavior,
         onToggleTranscodeFallback: state.handleToggleTranscodeFallback,
-        onToggleNeteaseScrobble: state.handleToggleNeteaseScrobble,
         onTogglePlaybackFade: state.handleTogglePlaybackFade,
         onQueueAddBehaviorChange: state.handleSetQueueAddBehavior,
     })));
-    // Subscribed to rather than read once: the panel has to grey out the moment the NetEase account
-    // signs out. `isNeteaseScrobbleReady` is the same predicate the command palette gates on, so the
-    // two can never disagree about whether the toggle may be flipped.
-    useOnlineProviderAccountStore(state => state.accounts.netease?.status);
-    const canReportNeteasePlayback = isNeteaseScrobbleReady();
     const {
         autoUseBestLyric,
-        preferredAlternativeLyricSource,
         localLyricsPriority,
         globalLyricTimelineOffsetMs,
         onToggleAutoUseBestLyric,
-        onPreferredAlternativeLyricSourceChange,
         onLocalLyricsPriorityChange,
     } = useLyricSettingsStore(useShallow(state => ({
         autoUseBestLyric: state.autoUseBestLyric,
-        preferredAlternativeLyricSource: state.preferredAlternativeLyricSource,
         localLyricsPriority: state.localLyricsPriority,
         globalLyricTimelineOffsetMs: state.globalLyricTimelineOffsetMs,
         onToggleAutoUseBestLyric: state.handleToggleAutoUseBestLyric,
-        onPreferredAlternativeLyricSourceChange: state.handleSetPreferredAlternativeLyricSource,
         onLocalLyricsPriorityChange: state.handleSetLocalLyricsPriority,
     })));
     const {
@@ -222,32 +205,6 @@ const PlaybackSettingsSubview: React.FC<PlaybackSettingsSubviewProps> = ({
                 </div>
             </SettingsAnchor>
 
-            <SettingsAnchor anchorId="scrobbleSettings" label={t('options.scrobbleSettings')}>
-                <SettingsSectionHeading icon={Radio} label={t('options.scrobbleSettings')} />
-                <div className={`p-4 rounded-xl border space-y-4 ${settingsCardClass}`}>
-                    <div className="flex items-start justify-between gap-3">
-                        <div className="space-y-1">
-                            <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                                {t('options.neteaseScrobble')}
-                            </div>
-                            <div className="text-[11px] opacity-50 max-w-[420px]" style={{ color: 'var(--text-secondary)' }}>
-                                {t('options.neteaseScrobbleDesc')}
-                            </div>
-                            {!canReportNeteasePlayback && (
-                                <div className="text-[11px] max-w-[420px]" style={{ color: 'var(--text-secondary)' }}>
-                                    {t('options.neteaseScrobbleSignInHint')}
-                                </div>
-                            )}
-                        </div>
-                        {renderToggle(
-                            neteaseScrobbleEnabled,
-                            () => onToggleNeteaseScrobble(!neteaseScrobbleEnabled),
-                            !canReportNeteasePlayback,
-                        )}
-                    </div>
-                </div>
-            </SettingsAnchor>
-
             <TransitionSettingsSection
                 isDaylight={isDaylight}
                 settingsCardClass={settingsCardClass}
@@ -335,35 +292,6 @@ const PlaybackSettingsSubview: React.FC<PlaybackSettingsSubviewProps> = ({
                         </div>
                     </div>
                     <LocalLyricFormatOrderSetting getOptionStyle={getAccentOptionStyle} />
-                    <div className="p-4 space-y-3 border-t" style={{ borderColor: 'var(--border-primary, rgba(255,255,255,0.06))' }}>
-                            <div className="space-y-1">
-                                <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                                    {t('settings.lyricMatchPriority')}
-                                </div>
-                                <div className="text-[11px] opacity-50 max-w-[420px]" style={{ color: 'var(--text-secondary)' }}>
-                                    {t('settings.lyricMatchPriorityDesc')}
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
-                                {LYRIC_MATCH_SOURCES.map((source) => {
-                                    const option = { value: source, label: getLyricProviderPreferenceLabel(source) };
-                                    const selected = preferredAlternativeLyricSource === option.value;
-                                    return (
-                                        <button
-                                            key={option.value}
-                                            type="button"
-                                            onClick={() => onPreferredAlternativeLyricSourceChange(option.value)}
-                                            className="rounded-xl border px-3 py-2 text-center transition-colors"
-                                            style={getAccentOptionStyle(selected)}
-                                        >
-                                            <div className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
-                                                {option.label}
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                    </div>
                     <button
                         type="button"
                         onClick={onOpenGlobalLyricOffsetSettings}

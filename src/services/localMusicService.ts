@@ -934,7 +934,6 @@ async function buildImportedSong(
         matchedIsPureMusic: existingSong?.matchedIsPureMusic,
         matchedLyricsSongId: existingSong?.matchedLyricsSongId,
         matchedLyricsSource: existingSong?.matchedLyricsSource,
-        matchedLyricsProviderPlatform: existingSong?.matchedLyricsProviderPlatform,
         noAutoMatch: existingSong?.noAutoMatch,
         lyricsSource: existingSong?.lyricsSource,
         useOnlineCover: existingSong?.useOnlineCover,
@@ -1351,7 +1350,6 @@ export async function matchLyrics(song: LocalSong): Promise<LyricData | null> {
                     matchContext.durationMs,
                     {
                         album: matchContext.album,
-                        preferredSource: shouldUseBestLyric ? settingsLyricSettings.preferredAlternativeLyricSource : undefined,
                         metadataCandidate: matchContext.metadataCandidate,
                         exactMatchOnly: Boolean(matchContext.metadataCandidate && !shouldUseBestLyric),
                     },
@@ -1369,7 +1367,6 @@ export async function matchLyrics(song: LocalSong): Promise<LyricData | null> {
                 if (bestMatch && 'lyrics' in bestMatch) {
                     song.matchedLyricsSongId = bestMatch.id;
                     song.matchedLyricsSource = bestMatch.source;
-                    song.matchedLyricsProviderPlatform = bestMatch.matchedLyricsProviderPlatform;
                     song.matchedLyrics = bestMatch.lyrics;
                     song.matchedIsPureMusic = false;
 
@@ -1410,8 +1407,8 @@ export async function matchLyrics(song: LocalSong): Promise<LyricData | null> {
             return null;
         }
 
-        // Search on Netease
-        const searchPage = await getOnlineMusicProvider('netease')?.search?.searchSongs(searchQuery, 50, 0);
+        // Search on QQ Music
+        const searchPage = await getOnlineMusicProvider('qq')?.search?.searchSongs(searchQuery, 50, 0);
 
         if (!searchPage?.items?.length) {
             console.warn(`[LocalMusic] No search results for: "${searchQuery}"`);
@@ -1428,7 +1425,7 @@ export async function matchLyrics(song: LocalSong): Promise<LyricData | null> {
             return null;
         }
 
-        const matchedMetadata = getProviderSongMetadata(matchedSong, 'netease');
+        const matchedMetadata = getProviderSongMetadata(matchedSong, 'qq');
         console.log(`[LocalMusic] Found exact title match: ${matchedSong.name} by ${matchedMetadata.artists.map(artist => artist.name).join(', ')}`);
 
         // Preserve local and embedded lyrics when the configured priority keeps them first.
@@ -1438,8 +1435,8 @@ export async function matchLyrics(song: LocalSong): Promise<LyricData | null> {
             // Only update metadata and cover, preserve local lyrics
             const coverUrl = matchedMetadata.coverUrl;
             await applyMatchedMetadata(song.id, {
-                source: 'netease',
-                songId: matchedSong.id,
+                source: 'qq',
+                songId: matchedSong.qqMid ?? matchedSong.id,
                 title: matchedSong.name,
                 artists: matchedMetadata.artists,
                 album: matchedMetadata.album,
@@ -1454,11 +1451,11 @@ export async function matchLyrics(song: LocalSong): Promise<LyricData | null> {
         }
 
         // Fetch lyrics (only when NO local lyrics)
-        const processed = await getOnlineMusicProvider('netease')?.lyrics?.getLyrics(matchedSong);
+        const processed = await getOnlineMusicProvider('qq')?.lyrics?.getLyrics(matchedSong);
         if (!processed) return null;
 
         song.matchedLyricsSongId = matchedSong.id;
-        song.matchedLyricsSource = 'netease';
+        song.matchedLyricsSource = 'qq';
         song.matchedLyrics = processed.lyrics || undefined;
         song.matchedIsPureMusic = processed.isPureMusic;
 
@@ -1469,8 +1466,8 @@ export async function matchLyrics(song: LocalSong): Promise<LyricData | null> {
 
         const coverUrl = matchedMetadata.coverUrl;
         await applyMatchedMetadata(song.id, {
-            source: 'netease',
-            songId: matchedSong.id,
+            source: 'qq',
+            songId: matchedSong.qqMid ?? matchedSong.id,
             title: matchedSong.name,
             artists: matchedMetadata.artists,
             album: matchedMetadata.album,

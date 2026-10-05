@@ -24,7 +24,7 @@ describe('now playing toast visibility', () => {
             artists: [{ id: 1, name: 'Artist' }],
             album: { id: 1, name: 'Album' },
             durationMs: 180000,
-            sourceRef: { kind: 'online', providerId: 'netease', mediaId: 'now' },
+            sourceRef: { kind: 'online', providerId: 'qq', mediaId: 'now' },
         };
         const focus = vi.fn();
         const unregister = useLatticeControlsStore.getState().registerFocus(focus);

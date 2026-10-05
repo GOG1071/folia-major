@@ -7,33 +7,12 @@ import type { LyricStaffPolicyOptions } from '../../../utils/lyrics/staffCredits
 import { ensureLyricDataRenderHints } from '../../../utils/lyrics/renderHints';
 import { applyLyricWordSegmentation } from '../../../utils/lyrics/lyricSegmentationRecord';
 import { getLyricSegmentationRecord } from '../../../stores/useLyricSegmentationStore';
-import { applyDetectedChorusEffects, applyNeteaseChorusByTime } from '../../../utils/lyrics/chorusEffects';
-import type { NeteaseChorusRange } from '../../../utils/lyrics/chorusEffects';
+import { applyDetectedChorusEffects, applyChorusByTime } from '../../../utils/lyrics/chorusEffects';
+import type { ChorusRange } from '../../../types/onlineMusic';
 import { getPlaybackSongKey } from '../../../utils/appPlaybackGuards';
 import { applyLyricsTransform, untransformedLyrics } from '../../../services/hostExtensionHooks';
 
 // src/components/app/playback/createLyricsSetter.ts
-
-const getStoredNeteaseLyrics = (song: SongResult | null): LyricData | null => {
-    if (!song) return null;
-    
-    // Navidrome song
-    if ((song as any).isNavidrome) {
-        if ((song as any).matchedLyricsSource === 'netease' && (song as any).matchedLyrics) {
-            return (song as any).matchedLyrics;
-        }
-        return null;
-    }
-
-    // Online song
-    if (song.onlineLyricsState) {
-        if (song.onlineLyricsState.matchedLyricsSource === 'netease' && song.onlineLyricsState.onlineOverrideLyrics) {
-            return song.onlineLyricsState.onlineOverrideLyrics;
-        }
-    }
-
-    return null;
-};
 
 // Creates the App-level lyric setter that applies filtering and render-hint normalization.
 // The staff-credit policy stays here rather than in the parser: it is a display decision that
@@ -45,7 +24,7 @@ export const createLyricsSetter = (
     staffOptions?: LyricStaffPolicyOptions,
 ) => {
     let lastSongId: number | string | null = null;
-    let cachedNeteaseChorusRanges: NeteaseChorusRange[] | null = null;
+    let cachedChorusRanges: ChorusRange[] | null = null;
 
     return (incomingLyrics: LyricData | null) => {
         // Lyrics already on screen (e.g. re-applied after an automix cancel) re-enter from
@@ -56,7 +35,7 @@ export const createLyricsSetter = (
 
         if (currentSongId !== lastSongId) {
             lastSongId = currentSongId;
-            cachedNeteaseChorusRanges = null;
+            cachedChorusRanges = null;
         }
 
         // 通用过滤是用户的显式指令，先跑；staff 策略只处理它没删掉的开头块。
@@ -68,29 +47,16 @@ export const createLyricsSetter = (
         if (processed) {
             const hasChorus = processed.lines.some(line => line.isChorus);
             if (hasChorus) {
-                // Cache the chorus ranges from the incoming lyrics (e.g. NetEase lyrics)
-                cachedNeteaseChorusRanges = processed.lines
+                // Cache the chorus ranges from the incoming lyrics so a later source switch for the same song keeps them
+                cachedChorusRanges = processed.lines
                     .filter(line => line.isChorus)
                     .map(line => ({
                         startTime: line.startTime,
                         endTime: line.endTime
                     }));
             } else {
-                // Try to load NetEase chorus ranges if they are not already cached
-                if (!cachedNeteaseChorusRanges && currentSong) {
-                    const storedLyrics = getStoredNeteaseLyrics(currentSong);
-                    if (storedLyrics) {
-                        cachedNeteaseChorusRanges = storedLyrics.lines
-                            .filter(line => line.isChorus)
-                            .map(line => ({
-                                startTime: line.startTime,
-                                endTime: line.endTime
-                            }));
-                    }
-                }
-
-                if (cachedNeteaseChorusRanges && cachedNeteaseChorusRanges.length > 0) {
-                    processed = applyNeteaseChorusByTime(processed, cachedNeteaseChorusRanges);
+                if (cachedChorusRanges && cachedChorusRanges.length > 0) {
+                    processed = applyChorusByTime(processed, cachedChorusRanges);
                 } else {
                     // Fall back to text-based frequency detection
                     const rebuildLrcText = processed.lines.map(line => `[00:00.00]${line.fullText}`).join('\n');

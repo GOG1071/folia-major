@@ -1,5 +1,5 @@
 import { User } from 'lucide-react';
-import type { ProviderAccountSummary } from '../../../types/onlineMusic';
+import { DEFAULT_ONLINE_PROVIDER_ID, type ProviderAccountSummary } from '../../../types/onlineMusic';
 
 // src/components/app/home/OnlineProviderConnectPanel.tsx
 
@@ -16,8 +16,6 @@ type OnlineProviderConnectPanelProps = {
 const providerBadge = (
     provider: ProviderAccountSummary,
 ): { label: string; iconUrl?: string; className: string } => {
-    if (provider.providerId === 'netease') return { label: '云', className: 'bg-red-600' };
-    if (provider.providerId === 'kugou') return { label: 'K', className: 'bg-blue-600' };
     if (provider.providerId === 'qq') return { label: 'Q', className: 'bg-green-600' };
     return { label: provider.shortName.slice(0, 1), className: 'bg-zinc-600' };
 };
@@ -39,14 +37,14 @@ const OnlineProviderConnectPanel = ({
             <p className="opacity-50 text-sm leading-6 whitespace-pre-line">{prompt}</p>
         </div>
         {/*
-          * 上限从 max-w-md（448px）放宽到 max-w-3xl（768px）：本 PR 之前只有网易云与酷狗两个按钮，
-          * 448px 装得下；加入 QQ 音乐后三个按钮简体下要 566px、英文下要 730px，会被挤到第二行。
+          * 上限从 max-w-md（448px）放宽到 max-w-3xl（768px）：Folium mod 来源的在线平台会与内置的 QQ 音乐并排，
+          * 按钮多了 448px 装不下，会被挤到第二行。
           * flex-wrap 保留，窗口真的窄下去仍然照常换行。
           */}
         <div className="flex flex-wrap items-center justify-center gap-3.5 max-w-3xl w-full pt-2">
             {providers.map(provider => {
                 const configured = provider.availability.configured;
-                const isPrimaryProvider = provider.providerId === 'netease';
+                const isPrimaryProvider = provider.providerId === DEFAULT_ONLINE_PROVIDER_ID;
                 const badge = providerBadge(provider);
                 return (
                     <button

@@ -7,7 +7,7 @@ import { WebSocket } from 'ws';
 import { createStageApi } from '../../../electron/stageApi.cjs';
 
 // HTTP-level Stage API tests exercise the simplified desktop-local contract
-// without depending on the real Electron window or Netease backend.
+// without depending on the real Electron window.
 
 const getFreePort = async () => await new Promise<number>((resolve, reject) => {
     const server = net.createServer();
@@ -41,11 +41,8 @@ const createStore = () => {
 };
 
 const withStageApi = async (options: {
-    searchStageSongs?: (query: string, limit: number) => Promise<any[]>;
-    autoCompletePlay?: boolean;
     autoCompleteControl?: boolean;
     autoCompleteQueue?: boolean;
-    onPlayRequest?: (payload: any) => void;
     onControlRequest?: (payload: any) => void;
     onQueueRequest?: (payload: any) => void;
 } = {}) => {
@@ -70,22 +67,11 @@ const withStageApi = async (options: {
             isDestroyed: () => false,
             webContents: {
                 send: (channel: string, payload: any) => {
-                    if (channel === 'stage-external-play-request') {
-                        options.onPlayRequest?.(payload);
-                    }
                     if (channel === 'stage-player-control-request') {
                         options.onControlRequest?.(payload);
                     }
                     if (channel === 'stage-player-queue-request') {
                         options.onQueueRequest?.(payload);
-                    }
-                    if (options.autoCompletePlay && channel === 'stage-external-play-request') {
-                        queueMicrotask(() => {
-                            stageApi.completeStageExternalPlayRequest({
-                                requestId: payload.requestId,
-                                ok: true,
-                            });
-                        });
                     }
                     if (options.autoCompleteControl && channel === 'stage-player-control-request') {
                         queueMicrotask(() => {
@@ -111,8 +97,6 @@ const withStageApi = async (options: {
         stageApiTokenSettingKey: settings.token,
         stageApiPortSettingKey: settings.port,
         defaultStageApiPort: port,
-        getNeteasePort: () => 39999,
-        searchStageSongs: options.searchStageSongs,
     });
 
     await stageApi.setStageEnabled(true);
@@ -134,7 +118,7 @@ const publishNormalPlayerSnapshot = (stageApi: ReturnType<typeof createStageApi>
     playbackContext: 'normal-playback',
     current: {
         id: '42',
-        source: 'netease',
+        source: 'qq',
         title: 'String Theocracy',
         artist: 'Mili',
         album: 'Library Of Ruina',
@@ -165,9 +149,9 @@ const publishNormalPlayerSnapshot = (stageApi: ReturnType<typeof createStageApi>
     queue: {
         currentIndex: 0,
         items: [{
-            queueItemId: 'netease:42:0',
+            queueItemId: 'qq:42:0',
             id: '42',
-            source: 'netease',
+            source: 'qq',
             title: 'String Theocracy',
             artist: 'Mili',
             album: 'Library Of Ruina',
@@ -179,9 +163,9 @@ const publishNormalPlayerSnapshot = (stageApi: ReturnType<typeof createStageApi>
 }, options);
 
 const buildStageQueueItems = (count: number) => Array.from({ length: count }, (_, index) => ({
-    queueItemId: `netease:${42 + index}:${index}`,
+    queueItemId: `qq:${42 + index}:${index}`,
     id: String(42 + index),
-    source: 'netease',
+    source: 'qq',
     title: `Track ${index + 1}`,
     artist: 'Folia',
     album: 'Stage',
@@ -344,167 +328,21 @@ describe('stageApi http contract', () => {
         expect(clearPayload.mediaSession).toBeNull();
     });
 
-    it('returns normalized local search results', async () => {
-        const context = await withStageApi({
-            searchStageSongs: async () => [{
-                songId: 42,
-                title: 'String Theocracy',
-                artists: ['Mili'],
-                album: 'Library Of Ruina',
-                durationMs: 188000,
-                coverUrl: 'https://example.com/cover.jpg',
-            }],
-        });
+    it('no longer serves the removed search and play routes', async () => {
+        const context = await withStageApi();
         activeCleanups.push(context.cleanup);
 
-        const response = await fetch(`${context.baseUrl}/stage/search`, {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${context.token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                query: 'String Theocracy',
-                limit: 5,
-            }),
-        });
-
-        expect(response.status).toBe(200);
-        const payload = await response.json();
-        expect(payload).toMatchObject({
-            domain: 'player-playback',
-            direction: 'outside-in',
-            deprecated: true,
-            replacement: '/stage/player/search',
-            query: 'String Theocracy',
-            songs: [{
-                songId: 42,
-                title: 'String Theocracy',
-                artists: ['Mili'],
-                album: 'Library Of Ruina',
-                durationMs: 188000,
-                coverUrl: 'https://example.com/cover.jpg',
-            }],
-        });
-    });
-
-    it('bridges /stage/play into a renderer request and resolves on completion', async () => {
-        const context = await withStageApi({ autoCompletePlay: true });
-        activeCleanups.push(context.cleanup);
-
-        const response = await fetch(`${context.baseUrl}/stage/play`, {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${context.token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                songId: 123456,
-            }),
-        });
-
-        expect(response.status).toBe(200);
-        const payload = await response.json();
-        expect(payload).toMatchObject({
-            domain: 'player-playback',
-            direction: 'outside-in',
-            deprecated: true,
-            replacement: '/stage/player/play',
-            ok: true,
-            songId: 123456,
-            appendToQueue: false,
-        });
-    });
-
-    it('passes appendToQueue through /stage/play requests', async () => {
-        const receivedRequests: Array<{ appendToQueue?: boolean; songId: number; }> = [];
-        const context = await withStageApi({
-            autoCompletePlay: true,
-            onPlayRequest: (payload) => {
-                receivedRequests.push(payload);
-            },
-        });
-        activeCleanups.push(context.cleanup);
-
-        const response = await fetch(`${context.baseUrl}/stage/play`, {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${context.token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                songId: 654321,
-                appendToQueue: true,
-            }),
-        });
-
-        expect(response.status).toBe(200);
-        const payload = await response.json();
-        expect(payload).toMatchObject({
-            domain: 'player-playback',
-            direction: 'outside-in',
-            deprecated: true,
-            replacement: '/stage/player/play',
-            ok: true,
-            songId: 654321,
-            appendToQueue: true,
-        });
-        expect(receivedRequests).toHaveLength(1);
-        expect(receivedRequests[0]).toMatchObject({
-            songId: 654321,
-            appendToQueue: true,
-        });
-    });
-
-    it('serves player search and play through the new player routes', async () => {
-        const receivedRequests: Array<{ songId: number; appendToQueue?: boolean; }> = [];
-        const context = await withStageApi({
-            autoCompletePlay: true,
-            onPlayRequest: payload => receivedRequests.push(payload),
-            searchStageSongs: async () => [{
-                songId: 7,
-                title: 'Player Route',
-                artists: ['Folia'],
-                album: 'Stage',
-                durationMs: 123000,
-                coverUrl: null,
-            }],
-        });
-        activeCleanups.push(context.cleanup);
-
-        const searchResponse = await fetch(`${context.baseUrl}/stage/player/search`, {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${context.token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ query: 'Player Route' }),
-        });
-        const searchPayload = await searchResponse.json();
-        expect(searchPayload).toMatchObject({
-            domain: 'player-playback',
-            direction: 'outside-in',
-            query: 'Player Route',
-        });
-        expect(searchPayload.deprecated).toBeUndefined();
-
-        const playResponse = await fetch(`${context.baseUrl}/stage/player/play`, {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${context.token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ songId: 7, appendToQueue: true }),
-        });
-        const playPayload = await playResponse.json();
-        expect(playPayload).toMatchObject({
-            domain: 'player-playback',
-            direction: 'outside-in',
-            ok: true,
-            songId: 7,
-            appendToQueue: true,
-        });
-        expect(receivedRequests[0]).toMatchObject({ songId: 7, appendToQueue: true });
+        for (const route of ['/stage/search', '/stage/play', '/stage/player/search', '/stage/player/play']) {
+            const response = await fetch(`${context.baseUrl}${route}`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${context.token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query: 'anything', songId: 1 }),
+            });
+            expect(response.status, route).toBe(404);
+        }
     });
 
     it('returns player status with context and capabilities', async () => {
@@ -524,7 +362,7 @@ describe('stageApi http contract', () => {
             playbackContext: 'normal-playback',
             current: {
                 id: '42',
-                source: 'netease',
+                source: 'qq',
                 title: 'String Theocracy',
             },
             controlCapabilities: {
@@ -666,7 +504,7 @@ describe('stageApi http contract', () => {
                 nextOffset: 2,
                 items: [{
                     id: '43',
-                    queueItemId: 'netease:43:1',
+                    queueItemId: 'qq:43:1',
                 }],
             },
         });
@@ -802,7 +640,7 @@ describe('stageApi http contract', () => {
         publishNormalPlayerSnapshot(context.stageApi, {
             current: {
                 id: '43',
-                source: 'netease',
+                source: 'qq',
                 title: 'Next Track',
                 artist: 'Folia',
                 album: 'Stage',

@@ -52,10 +52,10 @@ beforeEach(() => {
 });
 
 describe('parseOnlineLyricCacheKey', () => {
-    it('maps provider-prefixed and legacy NetEase keys onto one song key', () => {
+    it('maps provider-prefixed keys to a song key and ignores pre-provider keys', () => {
         expect(parseOnlineLyricCacheKey('online:qq:abc')).toEqual({ songKey: 'online:qq:abc', providerId: 'qq', mediaId: 'abc' });
-        expect(parseOnlineLyricCacheKey('123')?.songKey).toBe('online:netease:123');
-        expect(parseOnlineLyricCacheKey('cloud_123')?.songKey).toBe('online:netease:123');
+        expect(parseOnlineLyricCacheKey('123')).toBeNull();
+        expect(parseOnlineLyricCacheKey('cloud_123')).toBeNull();
         expect(parseOnlineLyricCacheKey('something_else')).toBeNull();
     });
 });
@@ -63,11 +63,11 @@ describe('parseOnlineLyricCacheKey', () => {
 describe('collectOnlineLyrics', () => {
     it('exports what playback would show and reports what it skips', async () => {
         serveCache([
-            entry('lyric_online:netease:1', lyrics('provider')),
-            entry('lyric_online:netease:1_state', { lyricsSource: 'imported', importedLyrics: lyrics('imported'), hasOnlineOverride: false }),
-            entry('lyric_online:netease:1_meta', { title: 'Song One', artist: 'Artist' }),
-            entry('lyric_online:netease:2', lyrics('instrumental?')),
-            entry('lyric_online:netease:2_state', { lyricsSource: 'online', hasOnlineOverride: true, onlineOverrideLyrics: null }),
+            entry('lyric_online:qq:1', lyrics('provider')),
+            entry('lyric_online:qq:1_state', { lyricsSource: 'imported', importedLyrics: lyrics('imported'), hasOnlineOverride: false }),
+            entry('lyric_online:qq:1_meta', { title: 'Song One', artist: 'Artist' }),
+            entry('lyric_online:qq:2', lyrics('instrumental?')),
+            entry('lyric_online:qq:2_state', { lyricsSource: 'online', hasOnlineOverride: true, onlineOverrideLyrics: null }),
             entry('lyric_online:qq:3', lyrics('plain')),
             entry('lyric_online:qq:9_meta', { title: 'Orphan' }),
         ]);
@@ -75,17 +75,17 @@ describe('collectOnlineLyrics', () => {
         const result = await collectOnlineLyrics();
 
         expect(result.entries.map(item => [item.songKey, item.source, item.lyrics.lines[0].fullText])).toEqual([
-            ['online:netease:1', 'imported', 'imported'],
+            ['online:qq:1', 'imported', 'imported'],
             ['online:qq:3', 'online', 'plain'],
         ]);
         expect(result.entries[0].song).toMatchObject({ title: 'Song One', artist: 'Artist' });
         expect(result.entries[0].offsetKey).toBe('1');
-        expect(result.skipped).toEqual([{ songKey: 'online:netease:2', label: undefined, reason: 'pureMusic' }]);
+        expect(result.skipped).toEqual([{ songKey: 'online:qq:2', label: undefined, reason: 'pureMusic' }]);
     });
 
-    it('prefers the provider-prefixed entry over a legacy NetEase one', async () => {
+    it('ignores a legacy unprefixed entry next to the provider-prefixed one', async () => {
         serveCache([
-            entry('lyric_online:netease:5', lyrics('current')),
+            entry('lyric_online:qq:5', lyrics('current')),
             entry('lyric_5', lyrics('legacy')),
         ]);
         const result = await collectOnlineLyrics();
@@ -95,8 +95,8 @@ describe('collectOnlineLyrics', () => {
 
     it('ignores legacy state keys, which playback never reads', async () => {
         serveCache([
-            entry('lyric_online:netease:6', lyrics('shown by playback')),
-            entry('lyric_online:netease:6_state', { lyricsSource: 'online', hasOnlineOverride: false }),
+            entry('lyric_online:qq:6', lyrics('shown by playback')),
+            entry('lyric_online:qq:6_state', { lyricsSource: 'online', hasOnlineOverride: false }),
             entry('lyric_6_state', { lyricsSource: 'online', hasOnlineOverride: true, onlineOverrideLyrics: null }),
             entry('lyric_cloud_6_state', { lyricsSource: 'imported', importedLyrics: lyrics('stale import') }),
         ]);
@@ -118,8 +118,8 @@ describe('collectOnlineLyrics', () => {
 
     it('trusts a recorded instrumental verdict the way playback does', async () => {
         serveCache([
-            entry('lyric_online:netease:7', lyrics('纯音乐，请欣赏')),
-            entry('lyric_online:netease:7_state', { lyricsSource: 'online', hasOnlineOverride: true, onlineOverrideLyrics: lyrics('纯音乐，请欣赏'), matchedIsPureMusic: false }),
+            entry('lyric_online:qq:7', lyrics('纯音乐，请欣赏')),
+            entry('lyric_online:qq:7_state', { lyricsSource: 'online', hasOnlineOverride: true, onlineOverrideLyrics: lyrics('纯音乐，请欣赏'), matchedIsPureMusic: false }),
         ]);
         const result = await collectOnlineLyrics();
         expect(result.entries).toHaveLength(1);
@@ -127,16 +127,16 @@ describe('collectOnlineLyrics', () => {
     });
 
     it('does not take names from the lyrics\' own [ti:] tag', async () => {
-        serveCache([entry('lyric_online:netease:8', lyrics('x', { title: 'Tag Title' }))]);
+        serveCache([entry('lyric_online:qq:8', lyrics('x', { title: 'Tag Title' }))]);
         const [collected] = (await collectOnlineLyrics()).entries;
         expect(collected.song.title).toBeUndefined();
     });
 
     it('does not export lyrics that are nothing but interludes', async () => {
-        serveCache([entry('lyric_online:netease:9', { lines: [{ startTime: 0.5, endTime: 3, fullText: '......', words: [] }] })]);
+        serveCache([entry('lyric_online:qq:9', { lines: [{ startTime: 0.5, endTime: 3, fullText: '......', words: [] }] })]);
         const result = await collectOnlineLyrics();
         expect(result.entries).toEqual([]);
-        expect(result.skipped).toEqual([expect.objectContaining({ songKey: 'online:netease:9', reason: 'noLyrics' })]);
+        expect(result.skipped).toEqual([expect.objectContaining({ songKey: 'online:qq:9', reason: 'noLyrics' })]);
     });
 
     it('lets a failed cache read surface instead of reporting nothing to export', async () => {
@@ -151,15 +151,15 @@ describe('resolveExportMetadata', () => {
         lyrics: lyrics('x'),
         source: 'online' as const,
         song: { key: songKey },
-        providerRef: { providerId: 'netease', mediaId },
+        providerRef: { providerId: 'qq', mediaId },
     });
 
     it('uses cached song lists before asking the provider', async () => {
         serveCache([
-            entry('last_queue', [{ id: 7, name: 'Cached Name', artists: [{ id: 1, name: 'Cached Artist' }], album: { id: 0, name: '' }, durationMs: 0 }]),
+            entry('last_queue', [{ id: 7, sourceRef: { kind: 'online', providerId: 'qq', mediaId: '7' }, name: 'Cached Name', artists: [{ id: 1, name: 'Cached Artist' }], album: { id: 0, name: '' }, durationMs: 0 }]),
         ]);
 
-        const [resolved] = await resolveExportMetadata([base('online:netease:7', '7')], { resolveOnline: true });
+        const [resolved] = await resolveExportMetadata([base('online:qq:7', '7')], { resolveOnline: true });
 
         expect(resolved.song).toMatchObject({ title: 'Cached Name', artist: 'Cached Artist' });
         expect(resolved.offsetKey).toBe(7);
@@ -169,12 +169,12 @@ describe('resolveExportMetadata', () => {
     it('keeps looking while the artist is missing, and uses the lyric tags only as a last resort', async () => {
         serveCache([]);
         songDetailMock.mockResolvedValue({ id: 'num', name: 'Real Title', artists: [{ id: 1, name: 'Real Artist' }], album: { id: 0, name: '' }, durationMs: 0 });
-        const titleOnly = { ...base('online:netease:3', '3'), song: { key: 'online:netease:3', title: 'Real Title' } };
+        const titleOnly = { ...base('online:qq:3', '3'), song: { key: 'online:qq:3', title: 'Real Title' } };
         const [resolved] = await resolveExportMetadata([titleOnly], { resolveOnline: true });
         expect(resolved.song).toMatchObject({ title: 'Real Title', artist: 'Real Artist' });
         expect(resolved.offsetKey).toBe('num');
 
-        const tagged = { ...base('online:netease:4', '4'), lyrics: lyrics('x', { title: 'Tag Title', artist: 'Tag Artist' }) };
+        const tagged = { ...base('online:qq:4', '4'), lyrics: lyrics('x', { title: 'Tag Title', artist: 'Tag Artist' }) };
         const [offline] = await resolveExportMetadata([tagged], { resolveOnline: false });
         expect(offline.song).toMatchObject({ title: 'Tag Title', artist: 'Tag Artist' });
     });
@@ -188,20 +188,20 @@ describe('resolveExportMetadata', () => {
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
         const [found, failed] = await resolveExportMetadata(
-            [base('online:netease:8', '8'), base('online:netease:9', '9')],
+            [base('online:qq:8', '8'), base('online:qq:9', '9')],
             { resolveOnline: true },
         );
 
         expect(found.song).toMatchObject({ title: 'Remote Name', artist: 'Remote Artist', album: 'LP' });
-        expect(saveToCacheMock).toHaveBeenCalledWith('lyric_online:netease:8_meta', expect.objectContaining({ title: 'Remote Name', songId: 8 }));
+        expect(saveToCacheMock).toHaveBeenCalledWith('lyric_online:qq:8_meta', expect.objectContaining({ title: 'Remote Name', songId: 8 }));
         expect(failed.song.title).toBeUndefined();
-        expect(buildLyricFileBaseName(failed)).toBe('online_netease_9');
+        expect(buildLyricFileBaseName(failed)).toBe('online_qq_9');
         warn.mockRestore();
     });
 
     it('stays offline when online resolution is off', async () => {
         serveCache([]);
-        await resolveExportMetadata([base('online:netease:8', '8')], { resolveOnline: false });
+        await resolveExportMetadata([base('online:qq:8', '8')], { resolveOnline: false });
         expect(songDetailMock).not.toHaveBeenCalled();
     });
 });
@@ -250,10 +250,10 @@ describe('buildLyricExportArchive', () => {
     });
 
     it('writes one folder per format plus a manifest', async () => {
-        const song = { songKey: 'online:netease:1', lyrics: lyrics('hello'), source: 'online' as const, song: { title: 'T', artist: 'A' } };
+        const song = { songKey: 'online:qq:1', lyrics: lyrics('hello'), source: 'online' as const, song: { title: 'T', artist: 'A' } };
         const archive = await buildLyricExportArchive(
-            [song, { ...song, songKey: 'online:netease:2' }],
-            [{ songKey: 'online:netease:3', reason: 'pureMusic' }],
+            [song, { ...song, songKey: 'online:qq:2' }],
+            [{ songKey: 'online:qq:3', reason: 'pureMusic' }],
             ['fia', 'lrc'],
             { includeTranslation: true, includeRomanization: true },
             new Date(2026, 0, 2, 3, 4, 5),
@@ -272,6 +272,6 @@ describe('buildLyricExportArchive', () => {
         expect(strFromU8(files['lrc/online/T - A.lrc'])).toContain('[00:01.00]<00:01.000>hello<00:02.000>');
         const manifest = JSON.parse(strFromU8(files['manifest.json']));
         expect(manifest.exported).toHaveLength(2);
-        expect(manifest.skipped).toEqual([{ songKey: 'online:netease:3', reason: 'pureMusic' }]);
+        expect(manifest.skipped).toEqual([{ songKey: 'online:qq:3', reason: 'pureMusic' }]);
     });
 });

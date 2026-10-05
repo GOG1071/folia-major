@@ -4,6 +4,11 @@ import type { LocalSong, UnifiedSong } from '@/types';
 
 // Verifies search playback and queue actions dispatch to the matching source.
 
+// Availability is provider-owned; the test stands in for a provider that flags one marked song.
+vi.mock('@/services/onlineMusic/songAvailability', () => ({
+    isSongUnavailable: (song: { name?: string } | null | undefined) => song?.name === 'Unavailable',
+}));
+
 const localSong: LocalSong = {
     id: 'local-1',
     fileName: 'local.mp3',
@@ -24,7 +29,7 @@ const track = (patch: Partial<UnifiedSong> = {}): UnifiedSong => ({
     album: { id: 1, name: 'Album' },
     durationMs: 1000,
     ...patch,
-    sourceRef: patch.sourceRef ?? { kind: 'online', providerId: 'netease', mediaId: '1' },
+    sourceRef: patch.sourceRef ?? { kind: 'online', providerId: 'qq', mediaId: '1' },
 });
 
 describe('dispatchSearchTrackAction', () => {
@@ -73,7 +78,7 @@ describe('dispatchSearchTrackAction', () => {
             onOnline: vi.fn(),
         };
         const didDispatch = dispatchSearchTrackAction(track({
-            privilege: { st: -200 },
+            name: 'Unavailable',
         }), actions);
 
         expect(didDispatch).toBe(false);

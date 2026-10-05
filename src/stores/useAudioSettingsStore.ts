@@ -29,8 +29,6 @@ export const AUTO_PLAY_ON_LAUNCH_KEY = 'folia_auto_play_on_launch';
 
 export const ENABLE_TRANSCODE_FALLBACK_KEY = 'folia_enable_transcode_fallback';
 
-/** Whether finished plays of online NetEase tracks are reported to the signed-in account. */
-export const NETEASE_SCROBBLE_KEY = 'folia_netease_scrobble';
 
 /** Whether pause fades out and resume fades in (services/playbackFade). On unless switched off. */
 export const PLAYBACK_FADE_KEY = 'folia_playback_fade_enabled';
@@ -140,8 +138,6 @@ export type AudioSettingsState = {
     autoPlayOnLaunch: boolean;
     /** Electron-only recovery for local and Navidrome formats Chromium cannot decode. */
     enableTranscodeFallback: boolean;
-    /** Report finished plays of online NetEase tracks to the signed-in account. Off by default. */
-    neteaseScrobbleEnabled: boolean;
     /** Short fade when pausing and resuming instead of cutting the sound. On by default. */
     playbackFadeEnabled: boolean;
     audioOutputDeviceId: string;
@@ -156,7 +152,6 @@ export type AudioSettingsState = {
     handleSetQueueAddBehavior: (behavior: QueueAddBehavior) => void;
     handleToggleAutoPlayOnLaunch: (enable: boolean) => void;
     handleToggleTranscodeFallback: (enable: boolean) => void;
-    handleToggleNeteaseScrobble: (enable: boolean) => void;
     handleTogglePlaybackFade: (enable: boolean) => void;
     handleSetAudioOutputDeviceId: (deviceId: string) => void;
     handleSetAudioEqualizerSettings: (settings: AudioEqualizerSettings) => void;
@@ -179,7 +174,6 @@ export const useAudioSettingsStore = create<AudioSettingsState>((set, get) => ({
         typeof window !== 'undefined' && Boolean(window.electron?.requestTranscodeFallback),
     ),
     // Off unless asked for: it writes to the listener's music account, so it is never a default.
-    neteaseScrobbleEnabled: getStoredBoolean(NETEASE_SCROBBLE_KEY, false),
     playbackFadeEnabled: getStoredBoolean(PLAYBACK_FADE_KEY, true),
     audioOutputDeviceId: readStoredAudioOutputDeviceId(),
     audioEqualizerSettings: readStoredAudioEqualizerSettings(),
@@ -225,10 +219,6 @@ export const useAudioSettingsStore = create<AudioSettingsState>((set, get) => ({
     handleToggleTranscodeFallback: (enable) => {
         setStoredBoolean(ENABLE_TRANSCODE_FALLBACK_KEY, enable);
         set({ enableTranscodeFallback: enable });
-    },
-    handleToggleNeteaseScrobble: (enable) => {
-        setStoredBoolean(NETEASE_SCROBBLE_KEY, enable);
-        set({ neteaseScrobbleEnabled: enable });
     },
     handleTogglePlaybackFade: (enable) => {
         setStoredBoolean(PLAYBACK_FADE_KEY, enable);
@@ -315,7 +305,6 @@ export const selectAudioSettingsSnapshot = (state: AudioSettingsState) => ({
     queueAddBehavior: state.queueAddBehavior,
     autoPlayOnLaunch: state.autoPlayOnLaunch,
     enableTranscodeFallback: state.enableTranscodeFallback,
-    neteaseScrobbleEnabled: state.neteaseScrobbleEnabled,
     playbackFadeEnabled: state.playbackFadeEnabled,
     audioOutputDeviceId: state.audioOutputDeviceId,
     audioEqualizerSettings: state.audioEqualizerSettings,
@@ -329,7 +318,6 @@ export const selectAudioSettingsSnapshot = (state: AudioSettingsState) => ({
     handleSetQueueAddBehavior: state.handleSetQueueAddBehavior,
     handleToggleAutoPlayOnLaunch: state.handleToggleAutoPlayOnLaunch,
     handleToggleTranscodeFallback: state.handleToggleTranscodeFallback,
-    handleToggleNeteaseScrobble: state.handleToggleNeteaseScrobble,
     handleTogglePlaybackFade: state.handleTogglePlaybackFade,
     handleSetAudioOutputDeviceId: state.handleSetAudioOutputDeviceId,
     handleSetAudioEqualizerSettings: state.handleSetAudioEqualizerSettings,

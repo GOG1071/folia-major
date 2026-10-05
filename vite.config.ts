@@ -22,11 +22,6 @@ const LYRIC_PROXY_CORS_HEADERS: Record<string, string> = {
     'Content-Type',
     'Date',
     'X-Api-Version',
-    'KG-Rec',
-    'KG-RC',
-    'KG-CLIENTTIMEMS',
-    'mid',
-    'x-router',
   ].join(', '),
 };
 
@@ -34,14 +29,7 @@ const LYRIC_PROXY_IGNORED_FORWARD_HEADERS = ['host', 'connection', 'content-leng
 
 function isAllowedLyricProxyHost(hostname: string): boolean {
   return hostname === 'qq.com' || hostname.endsWith('.qq.com') ||
-    hostname === 'y.gtimg.cn' ||
-    hostname === 'kugou.com' || hostname.endsWith('.kugou.com') ||
-    hostname === 'kgimg.com' || hostname.endsWith('.kgimg.com') ||
-    hostname === 'amll-ttml-db.stevexmh.net';
-}
-
-function isAmllDbHost(hostname: string): boolean {
-  return hostname === 'amll-ttml-db.stevexmh.net';
+    hostname === 'y.gtimg.cn';
 }
 
 function setLyricProxyCorsHeaders(res: import('http').ServerResponse): void {
@@ -113,12 +101,6 @@ function devLyricProxyPlugin() {
           });
 
           setLyricProxyCorsHeaders(res);
-          if (isAmllDbHost(targetUrl.hostname) && response.status === 404) {
-            res.statusCode = 204;
-            res.end();
-            return;
-          }
-
           res.statusCode = response.status;
           res.statusMessage = response.statusText;
           const contentType = response.headers.get('content-type');

@@ -117,7 +117,7 @@ describe('localLibraryCatalogService', () => {
     it('creates separate structured matched artist assignments', async () => {
         await assignImportedSongs([song('duet')]);
         await applyMatchedMetadata('duet', {
-            source: 'netease',
+            source: 'qq',
             songId: 1,
             artists: [{ id: 1, name: 'Artist One' }, { id: 2, name: 'Artist Two' }],
             album: { id: 10, name: 'Online Album' },

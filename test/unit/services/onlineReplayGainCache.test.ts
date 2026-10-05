@@ -33,7 +33,7 @@ const { loadOnlineSongAudioSource } = await import('@/services/onlinePlayback');
 const song = {
     id: '1909927747',
     name: 'Less Than Zero',
-    sourceRef: { kind: 'online', providerId: 'netease', mediaId: '1909927747' },
+    sourceRef: { kind: 'online', providerId: 'qq', mediaId: '1909927747' },
 } as unknown as SongResult;
 
 const gain: ReplayGainInfo = { albumGain: -10.3644, trackGain: -10.3644 };

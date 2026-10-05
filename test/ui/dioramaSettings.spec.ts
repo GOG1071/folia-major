@@ -16,7 +16,7 @@ test('switches between clouds and corridor mode and keeps particle controls inte
         localStorage.setItem('static_mode', 'true');
         localStorage.setItem(guideKey, version);
     }, [APP_VERSION, GUIDE_VERSION_STORAGE_KEY]);
-    await page.route('**/__mock_netease__/**', async (route) => {
+    await page.route('**/__mock_qq__/**', async (route) => {
         await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
     });
     await page.goto('/');

@@ -64,7 +64,6 @@ type UseElectronPlaybackBridgeOptions = {
     exportState: VideoExportState;
     lyricTimelineOffsetMs?: number;
     onRemoteExportCommand?: (command: RemoteControlCommand) => boolean;
-    onExternalPlayRequest?: (request: any) => Promise<void>;
     onRemoteCycleLoopMode?: () => void;
     /**
      * Handles a remote seek that lands during an automix blend, returning true when it did.
@@ -109,7 +108,6 @@ export const useElectronPlaybackBridge = ({
     exportState,
     lyricTimelineOffsetMs,
     onRemoteExportCommand,
-    onExternalPlayRequest,
     onRemoteCycleLoopMode,
     onRemoteTransitionSeek,
     publishTrackTransition,
@@ -712,16 +710,6 @@ export const useElectronPlaybackBridge = ({
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activePlaybackContext, audioRef, currentTime, duration, isNowPlayingControlDisabledRef, mediaSessionNextRef, mediaSessionPauseRef, mediaSessionPlayRef, mediaSessionPrevRef, onRemoteTransitionSeek, syncStageLyricsClock, taskbarHasTrackRef, taskbarPlayerStateRef]);
-
-    useEffect(() => {
-        if (!window.electron?.onStageExternalPlayRequest || !onExternalPlayRequest) {
-            return;
-        }
-
-        return window.electron.onStageExternalPlayRequest((request) => {
-            void onExternalPlayRequest(request);
-        });
-    }, [onExternalPlayRequest]);
 
     // Wrapped so the callbacks this hook hands back keep one identity for the app's lifetime. They
     // are all invoked from events or effects, and their churn was what kept every build*Model memo

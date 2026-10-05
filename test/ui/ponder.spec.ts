@@ -27,7 +27,7 @@ const openPlayerPage = async (page: Page, slots?: { primary: string; secondary: 
         }
     }, { version: APP_VERSION, guideKey: GUIDE_VERSION_STORAGE_KEY, slotPair: slots });
 
-    await page.route('**/__mock_netease__/**', async (route) => {
+    await page.route('**/__mock_qq__/**', async (route) => {
         await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
     });
     await page.goto('/');

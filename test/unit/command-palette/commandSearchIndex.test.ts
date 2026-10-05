@@ -84,7 +84,6 @@ describe('command search index', () => {
         const expected: Array<[string, string]> = [
             ['playback-volume', 'volume'],
             ['sleep-timer', 'sleep timer'],
-            ['playback-fm-mode', 'personal fm mode'],
             ['visualizer-picker', 'pick a visualizer'],
             ['visualizer-sonnet', 'visualizer: sonnet'],
         ];

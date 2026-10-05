@@ -49,7 +49,7 @@ describe('GridView track navigation targets', () => {
             artists: [{ id: 11, name: 'Artist' }],
             album: { id: 22, name: 'Album' },
             durationMs: 180_000,
-            sourceRef: { kind: 'online', providerId: 'netease', mediaId: '1' },
+            sourceRef: { kind: 'online', providerId: 'qq', mediaId: '1' },
         } satisfies UnifiedSong;
 
         expect(resolveGridTrackArtistTargetId(localTrack, localTrack.artists[0])).toBe('local-artist');

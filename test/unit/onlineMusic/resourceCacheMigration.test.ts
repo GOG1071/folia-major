@@ -22,51 +22,54 @@ vi.mock('@/services/coverCache', () => ({
     saveCoverBlob: vi.fn(),
 }));
 
-const legacyNeteaseSong: SongResult = {
+const qqSong: SongResult = {
     id: 42,
     name: 'Legacy',
     artists: [],
     album: { id: 1, name: 'Album' },
     durationMs: 1000,
-    sourceRef: { kind: 'online', providerId: 'netease', mediaId: '42' },
+    sourceRef: { kind: 'online', providerId: 'qq', mediaId: '42' },
 };
 
 describe('provider-aware resource cache migration', () => {
     beforeEach(() => vi.clearAllMocks());
 
-    it('reads an old lyric key and writes the provider-aware key', async () => {
-        const lyric = { lines: [{ fullText: 'legacy' }] };
+    it('reads and writes the provider-aware lyric key only', async () => {
+        const lyric = { lines: [{ fullText: 'current' }] };
         vi.mocked(getFromCache).mockImplementation(async key => (
-            key === 'lyric_42' ? lyric : null
+            key === 'lyric_online:qq:42' ? lyric : null
         ) as any);
 
-        await expect(getSongCacheWithLegacyMigration('lyric', legacyNeteaseSong)).resolves.toEqual(lyric);
-        expect(saveToCache).toHaveBeenCalledWith('lyric_online:netease:42', lyric);
+        await expect(getSongCacheWithLegacyMigration('lyric', qqSong)).resolves.toEqual(lyric);
+        expect(getFromCache).not.toHaveBeenCalledWith('lyric_42');
     });
 
-    it('reads an old audio key and writes the provider-aware key', async () => {
+    it('does not fall back to the removed NetEase-era unprefixed keys', async () => {
         const blob = new Blob(['audio'], { type: 'audio/mpeg' });
+        vi.mocked(getFromCache).mockImplementation(async key => (
+            key === 'lyric_42' ? { lines: [{ fullText: 'legacy' }] } : null
+        ) as any);
         vi.mocked(getCachedAudioBlob).mockImplementation(async key => key === 'audio_42' ? blob : null);
 
-        await expect(getCachedSongAudioBlob(legacyNeteaseSong)).resolves.toBe(blob);
-        expect(saveAudioBlob).toHaveBeenCalledWith('audio_online:netease:42', blob);
+        await expect(getSongCacheWithLegacyMigration('lyric', qqSong)).resolves.toBeNull();
+        await expect(getCachedSongAudioBlob(qqSong)).resolves.toBeNull();
+        expect(saveToCache).not.toHaveBeenCalled();
+        expect(saveAudioBlob).not.toHaveBeenCalled();
     });
 
     it('checks current audio cache existence without reading the audio blob', async () => {
-        vi.mocked(hasCachedAudio).mockImplementation(async key => key === 'audio_online:netease:42');
+        vi.mocked(hasCachedAudio).mockImplementation(async key => key === 'audio_online:qq:42');
 
-        await expect(hasCachedSongAudio(legacyNeteaseSong)).resolves.toBe(true);
+        await expect(hasCachedSongAudio(qqSong)).resolves.toBe(true);
         expect(hasCachedAudio).toHaveBeenCalledTimes(1);
         expect(getCachedAudioBlob).not.toHaveBeenCalled();
     });
 
-    it('checks legacy audio cache existence without reading or migrating the audio blob', async () => {
+    it('does not probe the removed unprefixed audio key', async () => {
         vi.mocked(hasCachedAudio).mockImplementation(async key => key === 'audio_42');
 
-        await expect(hasCachedSongAudio(legacyNeteaseSong)).resolves.toBe(true);
-        expect(hasCachedAudio).toHaveBeenNthCalledWith(1, 'audio_online:netease:42');
-        expect(hasCachedAudio).toHaveBeenNthCalledWith(2, 'audio_42');
-        expect(getCachedAudioBlob).not.toHaveBeenCalled();
-        expect(saveAudioBlob).not.toHaveBeenCalled();
+        await expect(hasCachedSongAudio(qqSong)).resolves.toBe(false);
+        expect(hasCachedAudio).toHaveBeenCalledTimes(1);
+        expect(hasCachedAudio).toHaveBeenCalledWith('audio_online:qq:42');
     });
 });

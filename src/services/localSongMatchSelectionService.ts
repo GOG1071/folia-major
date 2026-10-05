@@ -1,4 +1,4 @@
-import type { AmllDbPlatform, LocalSong, LyricData, LyricProviderSource } from '../types';
+import type { LocalSong, LyricData, LyricProviderSource } from '../types';
 import type { LocalLibraryAssignmentOrigin } from '../types/localLibrary';
 import type { OnlineMetadataCandidate } from './onlineMetadataSearchService';
 import { cacheLocalSongOnlineCover, removeCachedCover } from './coverCache';
@@ -15,7 +15,6 @@ export interface LocalSongOnlineLyricsSelection {
   lyrics: LyricData;
   songId: number | string;
   source: LyricProviderSource;
-  providerPlatform?: AmllDbPlatform;
   isPureMusic: boolean;
 }
 
@@ -64,7 +63,6 @@ const buildSongPatch = (input: ApplyLocalSongMatchSelectionInput) => {
     patch.matchedIsPureMusic = input.onlineLyrics.isPureMusic;
     patch.matchedLyricsSongId = input.onlineLyrics.songId;
     patch.matchedLyricsSource = input.onlineLyrics.source;
-    patch.matchedLyricsProviderPlatform = input.onlineLyrics.providerPlatform;
     patch.lyricsSource = 'online';
     patch.hasManualLyricSelection = true;
   } else if (input.lyrics === 'local' || input.lyrics === 'embedded') {

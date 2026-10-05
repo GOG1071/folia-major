@@ -7,8 +7,8 @@ const { WebSocket, WebSocketServer } = require('ws');
 const { finished } = require('stream/promises');
 
 // Stage API server for desktop-local integrations. External tools can push
-// one parser-compatible lyrics session, push one media session, or ask Folia
-// to search/play songs.
+// one parser-compatible lyrics session, push one media session, or drive the
+// main player's transport and queue.
 
 const fsp = fs.promises;
 const STAGE_JSON_BODY_LIMIT_BYTES = 2 * 1024 * 1024;
@@ -18,7 +18,6 @@ const STAGE_MULTIPART_FILE_COUNT_LIMIT = 3;
 const STAGE_MULTIPART_PART_COUNT_LIMIT = 10;
 const STAGE_MULTIPART_FIELD_COUNT_LIMIT = 10;
 const STAGE_SESSION_RETENTION_LIMIT = 12;
-const STAGE_PLAY_REQUEST_TIMEOUT_MS = 15_000;
 const STAGE_PLAYER_REQUEST_TIMEOUT_MS = 10_000;
 const STAGE_PLAYER_QUEUE_DEFAULT_LIMIT = 100;
 const STAGE_PLAYER_QUEUE_MAX_LIMIT = 500;
@@ -175,8 +174,6 @@ function createStageApi({
   stageApiTokenSettingKey,
   stageApiPortSettingKey,
   defaultStageApiPort,
-  getNeteasePort,
-  searchStageSongs,
 }) {
   let stageServer = null;
   let stageLyricsSession = null;
@@ -188,7 +185,6 @@ function createStageApi({
     coverPath: null,
   };
   const stageSessionAssetIndex = new Map();
-  const pendingExternalPlayRequests = new Map();
   const pendingStagePlayerControlRequests = new Map();
   const pendingStagePlayerQueueRequests = new Map();
   const stagePlayerWebSockets = new Set();
@@ -752,20 +748,7 @@ function createStageApi({
     return stageSessionAssetIndex.get(sessionId) || null;
   };
 
-  const clearPendingExternalPlayRequests = (reason) => {
-    for (const [requestId, entry] of Array.from(pendingExternalPlayRequests.entries())) {
-      clearTimeout(entry.timer);
-      entry.reject(new StageApiError(reason || 'Stage external play request was canceled.', {
-        statusCode: 503,
-        code: 'STAGE_PLAY_CANCELED',
-        details: { requestId },
-      }));
-      pendingExternalPlayRequests.delete(requestId);
-    }
-  };
-
   const clearStageStateData = async () => {
-    clearPendingExternalPlayRequests('Stage state was cleared.');
     stageLyricsSession = null;
     stageMediaSession = null;
     stageActiveEntryKind = null;
@@ -1273,23 +1256,6 @@ function createStageApi({
     };
   };
 
-  const normalizeStageNeteaseLyricBranch = (value) => {
-    if (!value || typeof value !== 'object') {
-      return null;
-    }
-
-    const lyric = normalizeStageText(value.lyric);
-    const pureMusic = typeof value.pureMusic === 'boolean' ? value.pureMusic : undefined;
-    if (!lyric && pureMusic === undefined) {
-      return null;
-    }
-
-    return {
-      ...(lyric ? { lyric } : {}),
-      ...(pureMusic !== undefined ? { pureMusic } : {}),
-    };
-  };
-
   const normalizeStageLyricsSessionPayload = (payload = {}) => {
     const rawLyricSource = payload?.lyricSource;
     if (!rawLyricSource || typeof rawLyricSource !== 'object') {
@@ -1390,39 +1356,9 @@ function createStageApi({
         ...(plainLyrics.trim() ? { plainLyrics } : {}),
         ...(structuredLyrics.length > 0 ? { structuredLyrics } : {}),
       };
-    } else if (sourceType === 'netease') {
-      const lrc = normalizeStageNeteaseLyricBranch(rawLyricSource.lrc);
-      const yrc = normalizeStageNeteaseLyricBranch(rawLyricSource.yrc);
-      const ytlrc = normalizeStageNeteaseLyricBranch(rawLyricSource.ytlrc);
-      const tlyric = normalizeStageNeteaseLyricBranch(rawLyricSource.tlyric);
-      const lrcYrc = normalizeStageNeteaseLyricBranch(rawLyricSource?.lrc?.yrc);
-      const lrcYtlrc = normalizeStageNeteaseLyricBranch(rawLyricSource?.lrc?.ytlrc);
-      const pureMusic = typeof rawLyricSource.pureMusic === 'boolean' ? rawLyricSource.pureMusic : undefined;
-
-      if (!lrc && !yrc && !ytlrc && !tlyric && !lrcYrc && !lrcYtlrc && pureMusic === undefined) {
-        throw createStageValidationError(
-          'Stage netease lyricSource requires at least one lyric branch.',
-          'INVALID_STAGE_LYRICS',
-        );
-      }
-
-      lyricSource = {
-        type: 'netease',
-        ...(lrc || lrcYrc || lrcYtlrc ? {
-          lrc: {
-            ...(lrc || {}),
-            ...(lrcYrc ? { yrc: lrcYrc } : {}),
-            ...(lrcYtlrc ? { ytlrc: lrcYtlrc } : {}),
-          },
-        } : {}),
-        ...(yrc ? { yrc } : {}),
-        ...(ytlrc ? { ytlrc } : {}),
-        ...(tlyric ? { tlyric } : {}),
-        ...(pureMusic !== undefined ? { pureMusic } : {}),
-      };
     } else {
       throw createStageValidationError(
-        'Stage lyricSource.type must be embedded, local, navidrome, or netease.',
+        'Stage lyricSource.type must be embedded, local, or navidrome.',
         'INVALID_STAGE_LYRICS',
       );
     }
@@ -1434,86 +1370,6 @@ function createStageApi({
       lyricSource,
       updatedAt: Date.now(),
     };
-  };
-
-  const normalizeStageSearchResult = (song = {}) => {
-    const artists = Array.isArray(song.ar)
-      ? song.ar.map((artist) => normalizeStageText(artist?.name)).filter(Boolean)
-      : Array.isArray(song.artists)
-        ? song.artists.map((artist) => normalizeStageText(artist?.name)).filter(Boolean)
-        : [];
-    const coverUrl = normalizeStageText(
-      song?.al?.picUrl ||
-      song?.album?.picUrl ||
-      song?.simpleSong?.al?.picUrl ||
-      song?.simpleSong?.album?.picUrl,
-    ) || null;
-
-    return {
-      songId: Number(song.id),
-      title: normalizeStageText(song.name) || 'Unknown Song',
-      artists,
-      album: normalizeStageText(song?.al?.name || song?.album?.name) || '',
-      durationMs: Number.isFinite(song.dt) ? Math.max(0, Math.floor(song.dt)) : null,
-      coverUrl,
-    };
-  };
-
-  const defaultSearchStageSongs = async (query, limit) => {
-    const port = typeof getNeteasePort === 'function' ? Number(getNeteasePort()) : null;
-    if (!Number.isInteger(port) || port <= 0) {
-      throw new StageApiError('Local Netease API is unavailable.', {
-        statusCode: 503,
-        code: 'NETEASE_API_UNAVAILABLE',
-      });
-    }
-
-    const endpoint = `http://127.0.0.1:${port}/cloudsearch?keywords=${encodeURIComponent(query)}&limit=${limit}&offset=0`;
-    const response = await fetch(endpoint, { method: 'GET' });
-    if (!response.ok) {
-      throw new StageApiError('Failed to search songs through the local Netease API.', {
-        statusCode: 502,
-        code: 'NETEASE_SEARCH_FAILED',
-        details: {
-          status: response.status,
-          endpoint,
-        },
-      });
-    }
-
-    const payload = await response.json();
-    const songs = Array.isArray(payload?.result?.songs) ? payload.result.songs : [];
-    return songs.map(normalizeStageSearchResult).filter((song) => Number.isFinite(song.songId) && song.songId > 0);
-  };
-
-  const requestStageSongPlay = async (songId, options = {}) => {
-    const mainWindow = getMainWindow();
-    if (!mainWindow || mainWindow.isDestroyed()) {
-      throw new StageApiError('Folia main window is unavailable for external play requests.', {
-        statusCode: 503,
-        code: 'STAGE_PLAY_UNAVAILABLE',
-      });
-    }
-
-    const requestId = `stage-play-${Date.now()}-${crypto.randomUUID()}`;
-
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        pendingExternalPlayRequests.delete(requestId);
-        reject(new StageApiError('Stage external play request timed out.', {
-          statusCode: 504,
-          code: 'STAGE_PLAY_TIMEOUT',
-          details: { requestId, songId },
-        }));
-      }, STAGE_PLAY_REQUEST_TIMEOUT_MS);
-
-      pendingExternalPlayRequests.set(requestId, { resolve, reject, timer });
-      mainWindow.webContents.send('stage-external-play-request', {
-        requestId,
-        songId,
-        appendToQueue: options.appendToQueue === true,
-      });
-    });
   };
 
   const requestStagePlayerRendererAction = async (channel, pendingRequests, requestPrefix, payload, unavailableCode) => {
@@ -1604,41 +1460,6 @@ function createStageApi({
   const completeStagePlayerQueueRequest = (result) =>
     completeStagePlayerRendererRequest(pendingStagePlayerQueueRequests, result);
 
-  const completeStageExternalPlayRequest = ({ requestId, ok, error, baseSnapshot, snapshot, result } = {}) => {
-    const normalizedRequestId = normalizeStageText(requestId);
-    if (!normalizedRequestId) {
-      return false;
-    }
-
-    const pendingRequest = pendingExternalPlayRequests.get(normalizedRequestId);
-    if (!pendingRequest) {
-      return false;
-    }
-
-    clearTimeout(pendingRequest.timer);
-    pendingExternalPlayRequests.delete(normalizedRequestId);
-
-    const previousSnapshot = baseSnapshot || stagePlayerSnapshot || getFallbackStagePlayerSnapshot();
-    if (snapshot) {
-      publishStagePlayerSnapshot(snapshot);
-    }
-    const nextSnapshot = stagePlayerSnapshot || getFallbackStagePlayerSnapshot();
-
-    if (ok) {
-      pendingRequest.resolve(withStagePlayerQueueDiffRevisions(result || { ok: true }, previousSnapshot, nextSnapshot));
-      return true;
-    }
-
-    pendingRequest.reject(new StageApiError(normalizeStageText(error) || 'Renderer rejected the Stage play request.', {
-      statusCode: 502,
-      code: 'STAGE_PLAY_REJECTED',
-      details: {
-        requestId: normalizedRequestId,
-      },
-    }));
-    return true;
-  };
-
   const readStageJsonPayload = async (req, errorMessage, errorCode) => {
     const requestBody = await readRequestBodyWithLimit(req, STAGE_JSON_BODY_LIMIT_BYTES);
     try {
@@ -1652,54 +1473,6 @@ function createStageApi({
         },
       });
     }
-  };
-
-  const handleStagePlayerSearchRequest = async (req, { deprecated = false } = {}) => {
-    const payload = await readStageJsonPayload(
-      req,
-      'Failed to parse Stage player search JSON payload.',
-      'INVALID_STAGE_PLAYER_SEARCH_JSON',
-    );
-    const query = normalizeStageText(payload.query);
-    const limit = Number.isFinite(payload.limit) ? Math.max(1, Math.min(50, Math.floor(payload.limit))) : 10;
-    if (!query) {
-      throw createStageValidationError('Stage player search query is required.', 'INVALID_STAGE_PLAYER_SEARCH_QUERY');
-    }
-
-    const songs = searchStageSongs
-      ? await searchStageSongs(query, limit)
-      : await defaultSearchStageSongs(query, limit);
-
-    return withStagePlayerOutsideInMetadata({
-      ...(deprecated ? { deprecated: true, replacement: '/stage/player/search' } : {}),
-      query,
-      songs,
-    });
-  };
-
-  const handleStagePlayerPlayRequest = async (req, { deprecated = false } = {}) => {
-    const payload = await readStageJsonPayload(
-      req,
-      'Failed to parse Stage player play JSON payload.',
-      'INVALID_STAGE_PLAYER_PLAY_JSON',
-    );
-    const songId = Number(payload.songId);
-    const appendToQueue = payload.appendToQueue === true;
-    if (!Number.isInteger(songId) || songId <= 0) {
-      throw createStageValidationError('Stage player play payload requires a positive integer songId.', 'INVALID_STAGE_PLAYER_PLAY_SONG_ID');
-    }
-
-    const result = await requestStageSongPlay(songId, { appendToQueue });
-    return withStagePlayerOutsideInMetadata({
-      ...(deprecated ? { deprecated: true, replacement: '/stage/player/play' } : {}),
-      ok: true,
-      ...(result?.changed !== undefined ? { changed: result.changed } : {}),
-      ...(result?.deduplicated !== undefined ? { deduplicated: result.deduplicated } : {}),
-      ...(result?.affectedCount !== undefined ? { affectedCount: result.affectedCount } : {}),
-      ...(result?.diff ? { diff: result.diff } : {}),
-      songId,
-      appendToQueue,
-    });
   };
 
   const throwStagePlayerUnsupported = (message, code, details) => {
@@ -2006,26 +1779,6 @@ function createStageApi({
       return;
     }
 
-    if (pathname === '/stage/player/search' && req.method === 'POST') {
-      sendStageJson(res, 200, await handleStagePlayerSearchRequest(req));
-      return;
-    }
-
-    if (pathname === '/stage/search' && req.method === 'POST') {
-      sendStageJson(res, 200, await handleStagePlayerSearchRequest(req, { deprecated: true }));
-      return;
-    }
-
-    if (pathname === '/stage/player/play' && req.method === 'POST') {
-      sendStageJson(res, 200, await handleStagePlayerPlayRequest(req));
-      return;
-    }
-
-    if (pathname === '/stage/play' && req.method === 'POST') {
-      sendStageJson(res, 200, await handleStagePlayerPlayRequest(req, { deprecated: true }));
-      return;
-    }
-
     if (pathname === '/stage/player/control' && req.method === 'POST') {
       sendStageJson(res, 200, await handleStagePlayerControlRequest(req));
       return;
@@ -2047,7 +1800,6 @@ function createStageApi({
       return;
     }
 
-    clearPendingExternalPlayRequests('Stage server stopped.');
     clearPendingStagePlayerRequests(pendingStagePlayerControlRequests, 'Stage server stopped.', 'STAGE_PLAYER_CONTROL_UNAVAILABLE');
     clearPendingStagePlayerRequests(pendingStagePlayerQueueRequests, 'Stage server stopped.', 'STAGE_PLAYER_QUEUE_UNAVAILABLE');
     closeStagePlayerWebSockets();
@@ -2157,7 +1909,6 @@ function createStageApi({
     buildStageStatus,
     clearStageState,
     clearStageStateData,
-    completeStageExternalPlayRequest,
     completeStagePlayerControlRequest,
     completeStagePlayerQueueRequest,
     publishStagePlayerSnapshot,

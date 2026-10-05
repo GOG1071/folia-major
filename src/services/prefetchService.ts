@@ -5,7 +5,7 @@
  * Handles URL expiration (1200s TTL) and re-prefetches on queue changes.
  */
 
-import { ReplayGainInfo, SongResult, LyricData, OnlineLyricsState, type LyricProviderSource } from '../types';
+import { ReplayGainInfo, SongResult, LyricData, OnlineLyricsState } from '../types';
 import { migrateLyricDataRenderHints } from '../utils/lyrics/renderHints';
 import { isPureMusicLyricText } from '../utils/lyrics/pureMusic';
 import { autoMatchBestLyric } from '../utils/lyrics/autoMatchBestLyric';
@@ -89,7 +89,6 @@ export interface PrefetchedSongData {
         transLrc: string | null;
         isPureMusic: boolean;
     } | null;
-    lyricPreferenceSource: LyricProviderSource | null;
     coverUrl: string | null;
 }
 
@@ -186,10 +185,7 @@ const prefetchSong = async (
     if (existing?.audioUrl && existing.audioUrl !== 'CACHED_IN_DB') {
         existing.audioUrl = toSafePlaybackUrl(existing.audioUrl) ?? null;
     }
-  const currentSettingsLyricSettings = useLyricSettingsStore.getState();
-    const lyricPreferenceMatches = !currentSettingsLyricSettings.autoUseBestLyric
-        || existing?.lyricPreferenceSource === currentSettingsLyricSettings.preferredAlternativeLyricSource;
-    if (existing && lyricPreferenceMatches && existing.audioUrl && isUrlValid(existing.audioUrlFetchedAt) && (existing.lyrics || existing.lyricRaw?.isPureMusic)) {
+    if (existing && existing.audioUrl && isUrlValid(existing.audioUrlFetchedAt) && (existing.lyrics || existing.lyricRaw?.isPureMusic)) {
         console.log(`[Prefetch] Already cached: ${song.name}`);
         touchPrefetchCacheEntry(songKey, existing);
         analyseForAutomix(song, existing.audioUrl);
@@ -207,7 +203,6 @@ const prefetchSong = async (
         replayGain: existing?.replayGain ?? song.replayGain,
         lyrics: existing?.lyrics || null,
         lyricRaw: existing?.lyricRaw || null,
-        lyricPreferenceSource: existing?.lyricPreferenceSource || null,
         coverUrl: existing?.coverUrl || null,
     };
 
@@ -245,12 +240,6 @@ const prefetchSong = async (
             if (cachedLyrics) {
                 console.log(`[Prefetch] Lyrics in IndexedDB for: ${song.name}`);
                 data.lyrics = cachedLyrics;
-                // The same stamp the fetched path leaves below. Without it a track whose lyrics came
-                // from the cache can never satisfy the "already cached" test at the top of this
-                // function, so every prefetch pass re-enters the whole thing for it.
-                data.lyricPreferenceSource = currentSettingsLyricSettings.autoUseBestLyric
-                    ? currentSettingsLyricSettings.preferredAlternativeLyricSource
-                    : null;
             } else if (!signal.aborted) {
                 const lyricResult = await omni.getLyrics(song, { userId });
                 const processed = {
@@ -278,7 +267,6 @@ const prefetchSong = async (
   const settingsAutomixSettings = useAutomixSettingsStore.getState();
   const settingsLyricSettings = useLyricSettingsStore.getState();
                 const autoUseBest = settingsLyricSettings.autoUseBestLyric;
-                const preferredSource = settingsLyricSettings.preferredAlternativeLyricSource;
                 const shouldAutoMatch = autoUseBest && !onlineLyricsState?.hasOnlineOverride;
 
                 if (shouldAutoMatch) {
@@ -287,10 +275,9 @@ const prefetchSong = async (
                         const artistName = metadata.artists.map(a => a.name).join(', ');
                         const bestMatch = await autoMatchBestLyric(song.name, artistName, metadata.durationMs, {
                             album: metadata.album?.name,
-                            preferredSource: settingsLyricSettings.preferredAlternativeLyricSource,
-                            ...(sourceRef.providerId === 'netease' || sourceRef.providerId === 'kugou' || sourceRef.providerId === 'qq'
+                            ...(sourceRef.providerId === 'qq'
                                 ? { providerCandidate: {
-                                    providerId: sourceRef.providerId as 'netease' | 'kugou' | 'qq',
+                                    providerId: 'qq' as const,
                                     song,
                                     lyricsResult: {
                                         lyrics: parsedLyrics,
@@ -310,7 +297,6 @@ const prefetchSong = async (
                                 hasOnlineOverride: true,
                                 onlineOverrideLyrics: bestMatch.lyrics,
                                 matchedLyricsSource: bestMatch.source,
-                                matchedLyricsProviderPlatform: bestMatch.matchedLyricsProviderPlatform,
                             };
                             await saveOnlineLyricsState(song, overrideState);
                             finalLyrics = bestMatch.lyrics;
@@ -328,7 +314,6 @@ const prefetchSong = async (
                 } else {
                     console.log(
                         `[Prefetch] Skipping autoMatchBestLyric for "${song.name}": ` +
-                        `preferredSource=${preferredSource}, ` +
                         `autoUseBestLyric=${autoUseBest}`
                     );
                     if (resolvedLyrics) {
@@ -337,7 +322,6 @@ const prefetchSong = async (
                 }
 
                 data.lyrics = finalLyrics;
-                data.lyricPreferenceSource = autoUseBest ? preferredSource : null;
 
                 if (data.lyrics) {
                     console.log(`[Prefetch] Parsed and processed lyrics for: ${song.name}`);
@@ -396,7 +380,6 @@ export const updatePrefetchedAudioUrl = (
             : existing?.replayGain ?? song.replayGain,
         lyrics: existing?.lyrics || null,
         lyricRaw: existing?.lyricRaw || null,
-        lyricPreferenceSource: existing?.lyricPreferenceSource || null,
         coverUrl: existing?.coverUrl || null,
     };
 
@@ -518,7 +501,6 @@ export const invalidatePrefetchedLyrics = (): void => {
             ...cached,
             lyrics: null,
             lyricRaw: null,
-            lyricPreferenceSource: null,
         });
     }
 

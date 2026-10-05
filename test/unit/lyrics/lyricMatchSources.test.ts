@@ -1,98 +1,75 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { neteaseApi } from '@/services/netease';
-import { searchQQLyrics } from '@/utils/lyrics/providers/qqLyricProvider';
-import { fetchAmllDbLyrics } from '@/utils/lyrics/providers/amllDbProvider';
-import { searchAmllDbLyricCandidates } from '@/utils/lyrics/lyricMatchSources';
+import { searchQQLyrics, fetchQQLyrics } from '@/utils/lyrics/providers/qqLyricProvider';
+import {
+    LYRIC_MATCH_SOURCES,
+    fetchLyricsForMatchSource,
+    searchLyricsByMatchSource,
+} from '@/utils/lyrics/lyricMatchSources';
 
 // test/unit/lyrics/lyricMatchSources.test.ts
-// Covers source-specific lyric matching orchestration.
-
-vi.mock('@/services/netease', () => ({
-    neteaseApi: {
-        cloudSearch: vi.fn(),
-        getLyric: vi.fn(),
-        getChorus: vi.fn(),
-    }
-}));
-
-vi.mock('@/utils/lyrics/neteaseProcessing', () => ({
-    parseNeteaseChorusRanges: vi.fn(() => []),
-    processNeteaseLyrics: vi.fn(),
-}));
+// Covers the lyric-match facade: QQ Music is the only source it routes to.
 
 vi.mock('@/utils/lyrics/providers/qqLyricProvider', () => ({
     searchQQLyrics: vi.fn(),
     fetchQQLyrics: vi.fn(),
 }));
 
-vi.mock('@/utils/lyrics/providers/kugouLyricProvider', () => ({
-    searchKugouLyrics: vi.fn(),
-    fetchKugouLyrics: vi.fn(),
-}));
+const createLyrics = (text: string) => ({
+    lines: [{ fullText: text, startTime: 0, endTime: 1, words: [] }],
+    isWordByWord: false as const,
+});
 
-vi.mock('@/utils/lyrics/providers/amllDbProvider', () => ({
-    fetchAmllDbLyrics: vi.fn(),
-}));
-
-vi.mock('@/utils/lyrics/chorusEffects', () => ({
-    applyNeteaseChorusByTime: vi.fn((lyrics) => lyrics),
-}));
-
-const createWordByWordLyrics = () => ({
-    lines: [{
-        fullText: 'Test lyric',
-        startTime: 0,
-        endTime: 1,
-        words: [],
-    }],
-    isWordByWord: true as const,
+const qqSong = (id: number, name: string, artist: string) => ({
+    id,
+    name,
+    artists: [{ id, name: artist }],
+    album: { id: 0, name: '' },
+    durationMs: 200000,
+    qqMid: `mid-${id}`,
 });
 
 describe('lyricMatchSources', () => {
-    const cloudSearchMock = vi.mocked(neteaseApi.cloudSearch);
     const searchQQLyricsMock = vi.mocked(searchQQLyrics);
-    const fetchAmllDbLyricsMock = vi.mocked(fetchAmllDbLyrics);
+    const fetchQQLyricsMock = vi.mocked(fetchQQLyrics);
 
     beforeEach(() => {
         vi.resetAllMocks();
     });
 
-    it('probes AMLLDB candidates concurrently', async () => {
-        const deferred: Array<{
-            resolve: (value: ReturnType<typeof createWordByWordLyrics> | null) => void;
-        }> = [];
+    it('offers QQ Music as the only match source', () => {
+        expect(LYRIC_MATCH_SOURCES).toEqual(['qq']);
+    });
 
-        cloudSearchMock.mockResolvedValue({
-            result: {
-                songs: [
-                    { id: 101, name: 'Song Title', dt: 200000, ar: [{ name: 'Artist Name' }] },
-                    { id: 102, name: 'Song Title', dt: 200000, ar: [{ name: 'Artist Name' }] },
-                ],
-            },
-        });
-        searchQQLyricsMock.mockResolvedValue([]);
-        fetchAmllDbLyricsMock.mockImplementation(() => {
-            let resolve!: (value: ReturnType<typeof createWordByWordLyrics> | null) => void;
-            const promise = new Promise<ReturnType<typeof createWordByWordLyrics> | null>((res) => {
-                resolve = res;
-            });
-            deferred.push({ resolve });
-            return promise;
-        });
+    it('searches QQ and sorts the results by match score', async () => {
+        searchQQLyricsMock.mockResolvedValue([
+            qqSong(1, 'Song Title (Live)', 'Someone Else'),
+            qqSong(2, 'Song Title', 'Artist Name'),
+        ]);
 
-        const searchPromise = searchAmllDbLyricCandidates('Song Title - Artist Name', {
+        const results = await searchLyricsByMatchSource('qq', 'Song Title - Artist Name', {
             title: 'Song Title',
             artist: 'Artist Name',
             durationMs: 200000,
         });
-        await new Promise(resolve => setTimeout(resolve, 0));
 
-        expect(fetchAmllDbLyricsMock).toHaveBeenCalledTimes(2);
+        expect(searchQQLyricsMock).toHaveBeenCalledWith('Song Title - Artist Name');
+        expect(results.map(result => result.id)).toEqual([2, 1]);
+    });
 
-        deferred[0].resolve(null);
-        deferred[1].resolve(createWordByWordLyrics());
-        const results = await searchPromise;
+    it('returns the fetched QQ lyrics when they are renderable', async () => {
+        const lyrics = createLyrics('Test lyric');
+        fetchQQLyricsMock.mockResolvedValue(lyrics);
 
-        expect(results.map(result => result.id)).toEqual([102]);
+        const result = await fetchLyricsForMatchSource('qq', qqSong(2, 'Song Title', 'Artist Name'));
+
+        expect(result).toEqual({ lyrics, isPureMusic: false });
+    });
+
+    it('reports no lyrics when QQ returns nothing renderable', async () => {
+        fetchQQLyricsMock.mockResolvedValue(null);
+
+        const result = await fetchLyricsForMatchSource('qq', qqSong(2, 'Song Title', 'Artist Name'));
+
+        expect(result).toEqual({ lyrics: null, isPureMusic: false });
     });
 });

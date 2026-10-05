@@ -20,8 +20,6 @@ import { importLocalPlaylistFile } from '../services/localPlaylistFileService';
 import { useOnlineProviderQrLogin } from '../hooks/useOnlineProviderQrLogin';
 import type { OnlineProviderPlatformState } from '../hooks/useOnlineProviderPlatform';
 import { omni } from '../services/onlineMusic/omni';
-import { getPersonalFmSelectionLabel } from '../services/onlineMusic/fmModes';
-import { usePersonalFmModeStore } from '../stores/usePersonalFmModeStore';
 import { getSongCoverUrl } from '../services/onlineMusic/songMetadata';
 import OnlineProviderSwitcher from './app/home/OnlineProviderSwitcher';
 import OnlineProviderConnectPanel from './app/home/OnlineProviderConnectPanel';
@@ -29,11 +27,10 @@ import OnlineProviderAccountlessPanel from './app/home/OnlineProviderAccountless
 import OnlineProviderLoginModal from './app/home/OnlineProviderLoginModal';
 import { buildQrLoginDiagnosticsProps } from './app/home/buildQrLoginDiagnosticsProps';
 import { canSwitchToProviderDirectly, resolveOnlineProviderAccountView } from './app/home/onlineProviderAccountView';
-import type { MediaId, OmniProviderCapabilities, ProviderAccountSummary, ProviderCollection, ProviderUser } from '../types/onlineMusic';
+import { DEFAULT_ONLINE_PROVIDER_ID, type MediaId, type OmniProviderCapabilities, type ProviderAccountSummary, type ProviderCollection } from '../types/onlineMusic';
 import qqIcon from '../assets/providers/qq.svg';
 import wechatIcon from '../assets/providers/wechat.svg';
 import { useHomeLayoutSettingsStore } from '../stores/useHomeLayoutSettingsStore';
-import { useNeteaseApiStatusStore } from '../stores/useNeteaseApiStatusStore';
 import { useThemeSettingsStore } from '../stores/useThemeSettingsStore';
 import { countRender } from '../dev/renderCount';
 
@@ -43,10 +40,9 @@ import { countRender } from '../dev/renderCount';
 
 // Each provider scans from its own app, so the modal copy is keyed here instead of nested in the JSX.
 const LOGIN_COPY_BY_PROVIDER: Record<string, { title: string; note: string }> = {
-    kugou: { title: 'home.loginTitleKugou', note: 'home.loginNoteKugou' },
     qq: { title: 'home.loginTitleQq', note: 'home.loginNoteQq' },
 };
-const NETEASE_LOGIN_COPY = { title: 'home.loginTitle', note: 'home.loginNote' };
+const DEFAULT_LOGIN_COPY = { title: 'home.loginTitleQq', note: 'home.loginNoteQq' };
 
 const NO_PROVIDER_CAPABILITIES: OmniProviderCapabilities = {
     search: false,
@@ -83,9 +79,6 @@ interface Grid3DProps {
     onPlaySong: (song: SongResult, playlistCtx?: SongResult[], isFmCall?: boolean) => void;
     onBackToPlayer: () => void;
     onRefreshUser: () => void;
-    user: ProviderUser | null;
-    playlists: ProviderCollection[];
-    cloudPlaylist?: ProviderCollection | null;
     currentTrack?: SongResult | null;
     localSongs: LocalSong[];
     localLibraryCatalog: LocalLibraryCatalogSnapshot;
@@ -136,9 +129,6 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         onPlaySong,
         onBackToPlayer,
         onRefreshUser,
-        user,
-        playlists,
-        cloudPlaylist = null,
         currentTrack,
         localSongs,
         localLibraryCatalog,
@@ -200,15 +190,9 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     })));
 
     const isOnlineTab = homeViewTab === 'playlist' || homeViewTab === 'albums' || homeViewTab === 'radio';
-    const activeProviderId = onlineProviderPlatform?.activeProviderId || 'netease';
+    const activeProviderId = onlineProviderPlatform?.activeProviderId || DEFAULT_ONLINE_PROVIDER_ID;
     const activeProviderSummary = onlineProviderPlatform?.activeProvider;
     const activeProviderCapabilities = readProviderCapabilities(activeProviderId);
-    // The FM card doubles as the mode readout: the card is the only place the current mode shows
-    // up outside the player, and the picker can change it while this grid stays mounted.
-    const personalFmSelection = usePersonalFmModeStore(state => state.selection);
-    const personalFmModeLabel = activeProviderCapabilities.personalFmModes
-        ? getPersonalFmSelectionLabel(personalFmSelection, (key, fallback) => t(key, fallback ?? ''))
-        : '';
     const activeProviderLabel = activeProviderSummary?.shortName
         || activeProviderSummary?.displayName
         || omni.getProviderLabel(activeProviderId);
@@ -224,19 +208,13 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     const radioUnavailableReason = canUseOnlineRadio
         ? undefined
         : t('status.providerRecommendationsUnavailable', { provider: activeProviderLabel });
-    const activeUser = activeProviderSummary?.user
-        || (activeProviderId === 'netease' ? user : null);
+    const activeUser = activeProviderSummary?.user ?? null;
     const activeAccountView = resolveOnlineProviderAccountView({
         provider: activeProviderSummary,
         hasUser: Boolean(activeUser),
         platformAvailable: Boolean(onlineProviderPlatform),
     });
-    const activeCollections: ProviderCollection[] = activeProviderSummary?.collections || (activeProviderId === 'netease'
-        ? [
-            ...playlists,
-            ...(cloudPlaylist ? [cloudPlaylist] : []),
-        ]
-        : []);
+    const activeCollections: ProviderCollection[] = activeProviderSummary?.collections || [];
     const activeProviderNeedsRelogin = activeProviderSummary?.error === 'auth-required';
 
     const [focusedIndex, setFocusedIndex] = useState(0);
@@ -367,23 +345,6 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
             void onlineProviderPlatform?.switchProvider(provider.providerId);
         } else {
             void initLogin(provider.providerId);
-        }
-    };
-
-    // 网易云的本地后端起不来时，二维码请求必然失败；弹窗改为直接暴露原因和重启入口。
-    const neteaseApiSupported = useNeteaseApiStatusStore(state => state.supported);
-    const neteaseApiStatus = useNeteaseApiStatusStore(state => state.status);
-    const neteaseApiRestarting = useNeteaseApiStatusStore(state => state.restarting);
-    const restartNeteaseApi = useNeteaseApiStatusStore(state => state.restart);
-    const neteaseBackendFailed = neteaseApiSupported
-        && loginProviderId === 'netease'
-        && neteaseApiStatus?.status === 'error';
-
-    const handleRestartNeteaseApi = async () => {
-        await restartNeteaseApi();
-        // 重启成功后直接把二维码要回来，省掉一次手动刷新。
-        if (useNeteaseApiStatusStore.getState().status?.status === 'running') {
-            await startQrLogin('netease');
         }
     };
 
@@ -540,7 +501,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
             name: r.name,
             coverUrl: r.coverUrl,
             trackCount: r.trackCount,
-            description: (r.isFm && personalFmModeLabel) || r.description || t('home.radio'),
+            description: r.description || t('home.radio'),
             summary: r.summary || '',
             type: r.isFm
                 ? 'radio' as const
@@ -549,7 +510,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                     : 'playlist' as const,
             raw: r
         }));
-    }, [personalFmModeLabel, radioItems, t]);
+    }, [radioItems, t]);
 
     // Active tab list items mapping
     const currentDesktopItems = useMemo(() => {
@@ -999,8 +960,8 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
             <AnimatePresence>
                 {showLoginModal && (
                     <OnlineProviderLoginModal
-                        title={t((LOGIN_COPY_BY_PROVIDER[loginProviderId] || NETEASE_LOGIN_COPY).title)}
-                        note={t((LOGIN_COPY_BY_PROVIDER[loginProviderId] || NETEASE_LOGIN_COPY).note)}
+                        title={t((LOGIN_COPY_BY_PROVIDER[loginProviderId] || DEFAULT_LOGIN_COPY).title)}
+                        note={t((LOGIN_COPY_BY_PROVIDER[loginProviderId] || DEFAULT_LOGIN_COPY).note)}
                         qrCodeImg={qrCodeImg}
                         statusText={qrStatusText}
                         state={qrState}
@@ -1023,16 +984,6 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 })),
                                 selectedId: selectedLoginMethodId,
                                 onSelect: selectLoginMethod,
-                            }
-                            : undefined}
-                        backendFailure={neteaseBackendFailed
-                            ? {
-                                title: t('home.loginBackendDown'),
-                                detail: neteaseApiStatus?.error ?? null,
-                                restartLabel: t('home.restartBackend'),
-                                restartingLabel: t('home.restartingBackend'),
-                                restarting: neteaseApiRestarting,
-                                onRestart: () => void handleRestartNeteaseApi(),
                             }
                             : undefined}
                         diagnostics={qrLoginFailure

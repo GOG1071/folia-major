@@ -1,16 +1,18 @@
 import { expect, test, type Page } from '@playwright/test';
-import { installBaseState, mockNeteaseApi, openApp } from './helpers/appFixtures';
+import { installBaseState, mockQqApi, openApp } from './helpers/appFixtures';
 
 // test/ui/homeCardPosition.spec.ts
 // Exercises the actual home tabs, asynchronous library reloads and the player unmount boundary.
 
 test.use({ serviceWorkers: 'block', screenshot: 'only-on-failure' });
 
-const albums = [1, 2, 3].map(id => ({ id, name: `Album ${id}`, artists: [], size: 5 }));
+// qqNormalize 认的收藏专辑条目：以 mid 为身份，名字取 albumName。
+const albums = [1, 2, 3].map(id => ({ albumMID: `album-mid-${id}`, albumName: `Album ${id}`, singer: [], songnum: 5 }));
+const albumsPayload = (items: typeof albums) => ({ albums: items, total: items.length, more: false });
 const focusedTitle = (page: Page) => page.locator('[data-grid3d-slider] + div h3');
 
 const bootHome = async (page: Page) => {
-    await installBaseState(page, { neteaseMode: 'logged-in', preserveNativeMediaQueries: true });
+    await installBaseState(page, { qqMode: 'logged-in', preserveNativeMediaQueries: true });
     await page.addInitScript(() => {
         // The shared home fixture provides a minimal Electron bridge; opening settings needs these too.
         Object.assign(window.electron!, {
@@ -32,11 +34,8 @@ const bootHome = async (page: Page) => {
             ),
         });
     });
-    await mockNeteaseApi(page, 'logged-in');
-    await page.route('**/__mock_netease__/user/cloud?*', route => route.fulfill({ json: { count: 0, songs: [] } }));
-    await page.route('**/__mock_netease__/album/sublist?*', route => route.fulfill({
-        json: { data: albums, hasMore: false },
-    }));
+    await mockQqApi(page, 'logged-in');
+    await page.route('**/__mock_qq__/user/albums?*', route => route.fulfill({ json: albumsPayload(albums) }));
     await openApp(page);
     await expect(focusedTitle(page)).toHaveText('Daily Mix');
 };
@@ -85,9 +84,9 @@ test('remembers separate cards across tabs and a player round trip with delayed 
     await expect(page.locator('[data-grid3d-slider]')).toHaveCount(0);
     let releaseAlbums!: () => void;
     const albumGate = new Promise<void>(resolve => { releaseAlbums = resolve; });
-    await page.route('**/__mock_netease__/album/sublist?*', async route => {
+    await page.route('**/__mock_qq__/user/albums?*', async route => {
         await albumGate;
-        await route.fulfill({ json: { data: albums, hasMore: false } });
+        await route.fulfill({ json: albumsPayload(albums) });
     });
     await setView(page, 'home');
     await expect(focusedTitle(page)).toHaveCount(0);
@@ -102,13 +101,13 @@ test('restores the card identity after reorder and bounds the fallback after del
     await page.getByRole('button', { name: 'Albums', exact: true }).click();
     await expect(focusedTitle(page)).toHaveText('Album 1');
     await focusCard(page, 2, 'Album 3');
-    await page.route('**/__mock_netease__/album/sublist?*', route => route.fulfill({
-        json: { data: [albums[2], albums[0], albums[1]], hasMore: false },
+    await page.route('**/__mock_qq__/user/albums?*', route => route.fulfill({
+        json: albumsPayload([albums[2], albums[0], albums[1]]),
     }));
     await page.evaluate(() => window.dispatchEvent(new Event('folia-refresh-favorite-albums')));
     await expectCenteredCard(page, 0, 'Album 3');
-    await page.route('**/__mock_netease__/album/sublist?*', route => route.fulfill({
-        json: { data: [albums[0]], hasMore: false },
+    await page.route('**/__mock_qq__/user/albums?*', route => route.fulfill({
+        json: albumsPayload([albums[0]]),
     }));
     await page.evaluate(() => window.dispatchEvent(new Event('folia-refresh-favorite-albums')));
     await expectCenteredCard(page, 0, 'Album 1');

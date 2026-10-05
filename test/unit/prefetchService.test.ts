@@ -10,7 +10,7 @@ const song: SongResult = {
     artists: [],
     album: { id: 'album', name: 'Album' },
     durationMs: 1000,
-    sourceRef: { kind: 'online', providerId: 'netease', mediaId: 'prefetch-song' },
+    sourceRef: { kind: 'online', providerId: 'qq', mediaId: 'prefetch-song' },
 };
 
 describe('prefetched online ReplayGain metadata', () => {

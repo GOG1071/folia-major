@@ -3,22 +3,18 @@ import {
     buildStageClearRequest,
     buildStageHealthRequest,
     buildStageLyricsRequest,
-    buildStagePlayRequest,
     buildStagePlayerControlRequest,
     buildStagePlayerQueueGetRequest,
     buildStagePlayerQueueRequest,
     buildStagePlayerStatusRequest,
     buildStagePlayerTimeRequest,
     buildStagePlayerWebSocketUrl,
-    buildStageSearchRequest,
     buildStageSessionRequest,
     buildStageStatusRequest,
     shouldUseStageMultipart,
     validateStageLyricsRequestInput,
-    validateStagePlayRequestInput,
     validateStagePlayerControlRequestInput,
     validateStagePlayerQueueRequestInput,
-    validateStageSearchRequestInput,
     validateStageSessionRequestInput,
 } from '@/utils/stageClientDemo';
 
@@ -158,68 +154,6 @@ describe('stageClientDemo helpers', () => {
         expect(result.init.method).toBe('DELETE');
     });
 
-    it('builds a search request with query and limit', () => {
-        const result = buildStageSearchRequest({
-            baseUrl: 'http://127.0.0.1:32107',
-            token: 'demo-token',
-            query: 'Mili',
-            limit: 5,
-        });
-
-        expect(result.endpoint).toBe('http://127.0.0.1:32107/stage/player/search');
-        expect(JSON.parse(String(result.init.body))).toEqual({
-            query: 'Mili',
-            limit: 5,
-        });
-    });
-
-    it('rejects empty search requests before sending', () => {
-        const error = validateStageSearchRequestInput({
-            baseUrl: 'http://127.0.0.1:32107',
-            token: 'demo-token',
-            query: '   ',
-        });
-
-        expect(error).toBe('Search query is required.');
-    });
-
-    it('builds a play request with songId', () => {
-        const result = buildStagePlayRequest({
-            baseUrl: 'http://127.0.0.1:32107',
-            token: 'demo-token',
-            songId: 123456,
-        });
-
-        expect(result.endpoint).toBe('http://127.0.0.1:32107/stage/player/play');
-        expect(JSON.parse(String(result.init.body))).toEqual({
-            songId: 123456,
-        });
-    });
-
-    it('builds a queue-append play request when requested', () => {
-        const result = buildStagePlayRequest({
-            baseUrl: 'http://127.0.0.1:32107',
-            token: 'demo-token',
-            songId: 123456,
-            appendToQueue: true,
-        });
-
-        expect(JSON.parse(String(result.init.body))).toEqual({
-            songId: 123456,
-            appendToQueue: true,
-        });
-    });
-
-    it('rejects invalid song ids before sending', () => {
-        const error = validateStagePlayRequestInput({
-            baseUrl: 'http://127.0.0.1:32107',
-            token: 'demo-token',
-            songId: 0,
-        });
-
-        expect(error).toBe('songId must be a positive integer.');
-    });
-
     it('builds player status and time requests', () => {
         const status = buildStagePlayerStatusRequest('http://127.0.0.1:32107/', 'demo-token');
         const time = buildStagePlayerTimeRequest('http://127.0.0.1:32107/', 'demo-token');
@@ -259,7 +193,7 @@ describe('stageClientDemo helpers', () => {
             baseUrl: 'http://127.0.0.1:32107',
             token: 'demo-token',
             action: 'move',
-            fromQueueItemId: 'netease:1:0',
+            fromQueueItemId: 'qq:1:0',
             toIndex: 1,
         });
         const selectResult = buildStagePlayerQueueRequest({
@@ -273,7 +207,7 @@ describe('stageClientDemo helpers', () => {
         expect(getResult.init.method).toBe('GET');
         expect(JSON.parse(String(editResult.init.body))).toEqual({
             action: 'move',
-            fromQueueItemId: 'netease:1:0',
+            fromQueueItemId: 'qq:1:0',
             toIndex: 1,
         });
         expect(JSON.parse(String(selectResult.init.body))).toEqual({

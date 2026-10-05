@@ -2,7 +2,6 @@ import { LyricData } from '../../types';
 import { applyLyricDisplayFilter, resolveLyricProcessingOptions } from './filtering';
 import { RawLyricSource } from './types';
 import { EmbeddedLyricAdapter } from './adapters/EmbeddedLyricAdapter';
-import { NeteaseLyricAdapter } from './adapters/NeteaseLyricAdapter';
 import { NavidromeLyricAdapter } from './adapters/NavidromeLyricAdapter';
 import { LocalFileLyricAdapter } from './adapters/LocalFileLyricAdapter';
 import { QrcLyricAdapter } from './adapters/QrcLyricAdapter';
@@ -16,9 +15,6 @@ export class LyricParserFactory {
         switch (source.type) {
             case 'embedded':
                 parsed = await new EmbeddedLyricAdapter().parse(source, resolvedOptions);
-                break;
-            case 'netease':
-                parsed = await new NeteaseLyricAdapter().parse(source, resolvedOptions);
                 break;
             case 'navidrome':
                 parsed = await new NavidromeLyricAdapter().parse(source, resolvedOptions);

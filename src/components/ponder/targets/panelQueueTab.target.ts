@@ -25,16 +25,7 @@ const radio: PonderSceneScript = {
         },
         { kind: 'pause', id: 'readSameCell' },
 
-        { kind: 'highlight', id: 'markMode', anchor: 'fmMode', intensity: [0, 0.95], durationMs: 440, keyframe: true },
-        {
-            kind: 'caption', id: 'mode', at: 'bottom',
-            textKey: 'ponder.captions.sidePanel.queueRadioMode',
-            pointTo: { anchor: 'fmMode' }, durationMs: 6200, withPrevious: true,
-        },
-        { kind: 'pause', id: 'readMode' },
-
-        { kind: 'highlight', id: 'dimMode', anchor: 'fmMode', intensity: [0.95, 0], durationMs: 360, keyframe: true },
-        { kind: 'highlight', id: 'markActions', anchor: 'fmActions', intensity: [0, 0.95], durationMs: 440, withPrevious: true },
+        { kind: 'highlight', id: 'markActions', anchor: 'fmActions', intensity: [0, 0.95], durationMs: 440, keyframe: true },
         {
             kind: 'caption', id: 'actions', at: 'bottom',
             textKey: 'ponder.captions.sidePanel.queueRadioActions',

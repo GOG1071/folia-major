@@ -102,7 +102,7 @@ describe('gridViewCollectionAdapters', () => {
             titleOrigin: 'manual-match' as const,
             importedMetadata: { title: 'Imported Title', titleSource: 'filename' as const, artistNames: ['Artist'] },
             onlineMetadata: {
-                source: 'netease' as const,
+                source: 'qq' as const,
                 title: 'Online Title',
                 artists: [{ name: 'Online Artist' }],
                 album: { name: 'Online Album' },

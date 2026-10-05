@@ -294,7 +294,6 @@ export function useStagePlaybackController({
         artists: [{ id: 0, name: session.artist || 'Stage' }],
         album: { id: 0, name: session.album || 'Stage', coverUrl: session.coverArtUrl || session.coverUrl || undefined },
         durationMs: Math.max(0, Math.floor(session.durationMs || 0)),
-        sourceType: 'cloud',
         isStage: true,
         sourceRef: { kind: 'stage', mediaId: session.id },
         stageData: session,
@@ -514,7 +513,6 @@ export function useStagePlaybackController({
         artists: [{ id: 0, name: session.artist || lyricData.artist || 'Stage' }],
         album: { id: 0, name: session.album || 'Stage' },
         durationMs: Math.max(0, Math.floor(getStageLyricsTimelineBounds(lyricData).endTimeSec * 1000)),
-        sourceType: 'cloud',
         isStage: true,
         sourceRef: { kind: 'stage', mediaId: String(session.updatedAt) },
         stageData: session,
@@ -707,7 +705,6 @@ export function useStagePlaybackController({
             artists: [{ id: 0, name: fallbackArtist }],
             album: { id: 0, name: fallbackAlbum || 'Now Playing', coverUrl: fallbackCoverUrl || undefined },
             durationMs: Math.max(0, Math.floor(resolvedDurationSec * 1000)),
-            sourceType: 'cloud',
             isStage: true,
             sourceRef: { kind: 'stage', mediaId: String(track?.id || `${fallbackTitle}|${fallbackArtist}`) },
         } as SongResult) : null;
@@ -1319,7 +1316,6 @@ export function useStagePlaybackController({
             artists: [{ id: 0, name: track?.artist || '' }],
             album: { id: 0, name: '', coverUrl: track?.coverUrl || undefined },
             durationMs,
-            sourceType: 'cloud',
             isStage: true,
             sourceRef: { kind: 'stage', mediaId: key },
         } as SongResult) : null;

@@ -13,26 +13,10 @@ const baseTrack = (): UnifiedSong => ({
     artists: [{ id: 2, name: 'Artist' }],
     album: { id: 3, name: 'Album', coverUrl: 'https://example.com/cover.jpg' },
     durationMs: 1000,
-    sourceRef: { kind: 'online', providerId: 'netease', mediaId: '1' },
+    sourceRef: { kind: 'online', providerId: 'qq', mediaId: '1' },
 });
 
 describe('search collection adapters', () => {
-    it('creates NetEase artist and album descriptors', async () => {
-        const track = baseTrack();
-        await expect(createSearchArtistCollection(track, 'Artist', 2)).resolves.toEqual(expect.objectContaining({
-            source: 'online',
-            providerId: 'netease',
-            id: 2,
-            type: 'artist',
-        }));
-        await expect(createSearchAlbumCollection(track, 'Album', 3)).resolves.toEqual(expect.objectContaining({
-            source: 'online',
-            providerId: 'netease',
-            id: 3,
-            type: 'album',
-        }));
-    });
-
     it('uses stable local entity ids and refuses unresolved local links', async () => {
         const track: UnifiedSong = {
             ...baseTrack(),
@@ -72,28 +56,28 @@ describe('search collection adapters', () => {
         }));
     });
 
-    it('uses canonical KuGou catalog references instead of display ids', async () => {
+    it('uses canonical online catalog references instead of display ids', async () => {
         const track: UnifiedSong = {
             ...baseTrack(),
-            id: 'HASH',
+            id: 'mid-1',
             artists: [{
                 id: 'display-artist',
                 name: 'Artist',
-                catalogRef: { providerId: 'kugou', kind: 'artist', id: 6539 },
+                catalogRef: { providerId: 'qq', kind: 'artist', id: 6539 },
             }],
             album: {
                 id: 'display-album',
                 name: 'Album',
-                catalogRef: { providerId: 'kugou', kind: 'album', id: 10729818 },
+                catalogRef: { providerId: 'qq', kind: 'album', id: 10729818 },
             },
-            sourceRef: { kind: 'online', providerId: 'kugou', mediaId: 'HASH' },
+            sourceRef: { kind: 'online', providerId: 'qq', mediaId: 'mid-1' },
         };
 
         await expect(createSearchArtistCollection(track, 'Artist', 'display-artist')).resolves.toMatchObject({
-            providerId: 'kugou', id: 6539, type: 'artist',
+            providerId: 'qq', id: 6539, type: 'artist',
         });
         await expect(createSearchAlbumCollection(track, 'Album', 'display-album')).resolves.toMatchObject({
-            providerId: 'kugou', id: 10729818, type: 'album',
+            providerId: 'qq', id: 10729818, type: 'album',
         });
     });
 });
