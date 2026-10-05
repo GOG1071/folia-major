@@ -1117,9 +1117,10 @@ export interface Album {
   catalogRef?: ProviderCatalogRef;
 }
 
-// QQ Music is the only online lyric source. Values persisted by older builds ('netease', 'kugou', 'amll')
-// are normalised away on read (see normalizeLyricProviderSource in utils/lyrics/sourcePriority.ts).
-export type LyricProviderSource = 'qq';
+// Online lyric sources: QQ Music (also an Omni music provider) and LRCLIB (a lyrics-only source). Values
+// persisted by older builds ('netease', 'kugou', 'amll') are normalised away on read (see
+// normalizeLyricProviderSource in utils/lyrics/lyricProviderSource.ts).
+export type LyricProviderSource = 'qq' | 'lrclib';
 
 export interface ReplayGainInfo {
   /** ReplayGain gain values in decibels. */

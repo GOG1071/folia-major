@@ -1,9 +1,10 @@
 import { LyricData, LyricProviderSource, SongResult } from '../../types';
 import type { ChorusRange, ProviderLyricsResult } from '../../types/onlineMusic';
 import { searchQQLyrics, fetchQQLyrics } from './providers/qqLyricProvider';
+import { fetchLrclibLyrics, getLrclibLyricsCandidate, searchLrclibLyrics } from './providers/lrclibLyricProvider';
 import { normalizeLyricMatchDurationMs } from './duration';
 import { calculateMatchScoreDetails } from './matchScore';
-import { buildLyricSearchQuery } from './searchQuery';
+import { buildLyricSearchQuery, normalizeSongTitleForLyricSearch } from './searchQuery';
 import { hasRenderableLyrics } from './validity';
 
 // src/utils/lyrics/autoMatchBestLyric.ts
@@ -48,6 +49,8 @@ export type AutoMatchBestLyricPureMusic = {
 
 export type AutoMatchBestLyricResult = AutoMatchBestLyricMatch | AutoMatchBestLyricPureMusic | null;
 
+type LyricMatchTarget = { title: string; artist: string; durationMs: number; album?: string };
+
 const isSelectedMetadataCandidate = (
     song: SongResult,
     candidate?: AutoMatchBestLyricOptions['metadataCandidate'],
@@ -59,7 +62,7 @@ const isSelectedMetadataCandidate = (
 function selectBestCandidate(
     source: LyricProviderSource,
     songs: SongResult[],
-    target: { title: string; artist: string; durationMs: number; album?: string }
+    target: LyricMatchTarget
 ): SongResult | null {
     const isReliableCandidate = (details: ReturnType<typeof calculateMatchScoreDetails>) =>
         details.titleMatched && (details.artistMatched || details.albumMatched === true);
@@ -122,7 +125,58 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: str
 }
 
 /**
- * Searches and matches the best lyric on QQ Music.
+ * Looks for a reliable LRCLIB record: an exact title/artist/duration lookup first, then a text search.
+ * LRCLIB only ever yields line-by-line lyrics (or an instrumental flag), so it is the fallback for when
+ * QQ Music produced nothing, never a rival to a QQ result.
+ */
+async function matchLrclibLyrics(target: LyricMatchTarget): Promise<AutoMatchBestLyricResult> {
+    const lookupTitle = normalizeSongTitleForLyricSearch(target.title, target.artist);
+    const exactCandidate = await withTimeout(
+        getLrclibLyricsCandidate({ title: lookupTitle, artist: target.artist, durationMs: target.durationMs }),
+        PROVIDER_SEARCH_TIMEOUT_MS,
+        'LRCLIB exact lookup',
+        null,
+    );
+    // An exact hit is accepted on identity alone (title and artist matched, duration within our own tolerance):
+    // LRCLIB files the same track under many albums, and the album must not veto a duration-verified hit.
+    // LRCLIB's own duration tolerance is looser than ours, hence the re-check.
+    const exactDetails = exactCandidate ? calculateMatchScoreDetails(target, exactCandidate) : null;
+    let bestCandidate = exactCandidate && exactDetails?.titleMatched && exactDetails.artistMatched && exactDetails.durationMatched === true
+        ? exactCandidate
+        : null;
+    if (!bestCandidate) {
+        // The album is left out of the query on purpose: LRCLIB's spelling of it often differs, and the
+        // album still counts in the score below.
+        const songs = (await withTimeout(
+            searchLrclibLyrics(buildLyricSearchQuery(target.title, target.artist), AUTO_MATCH_SEARCH_LIMIT),
+            PROVIDER_SEARCH_TIMEOUT_MS,
+            'LRCLIB search',
+            [],
+        )) ?? [];
+        bestCandidate = selectBestCandidate('lrclib', songs, target);
+    }
+    if (!bestCandidate) {
+        return null;
+    }
+
+    const processed = await withTimeout(
+        fetchLrclibLyrics(bestCandidate),
+        PROVIDER_LYRIC_TIMEOUT_MS,
+        `LRCLIB lyric fetch for ${bestCandidate.id}`,
+        null,
+    );
+    if (processed?.isPureMusic) {
+        return { isPureMusic: true, source: 'lrclib', id: bestCandidate.id };
+    }
+    if (hasRenderableLyrics(processed?.lyrics)) {
+        console.log(`[autoMatchBestLyric] Found accepted LRCLIB lyric match as the QQ fallback.`);
+        return { lyrics: processed.lyrics, source: 'lrclib', id: bestCandidate.id, song: bestCandidate };
+    }
+    return null;
+}
+
+/**
+ * Searches and matches the best lyric, asking QQ Music first and LRCLIB only when QQ has nothing.
  * A word-by-word result is returned immediately; a line-by-line result is kept as the fallback.
  * Returns the parsed lyrics and matching details, or null if no reliable match is found.
  */
@@ -220,6 +274,18 @@ export async function autoMatchBestLyric(
     if (lineByLineFallback) {
         console.log(`[autoMatchBestLyric] No word-by-word lyric match found; using ${lineByLineFallback.source} line-by-line fallback.`);
         return lineByLineFallback;
+    }
+
+    // QQ gave nothing usable. An exact-only request is a hand-picked QQ identity that no other source may replace.
+    if (!options.exactMatchOnly) {
+        try {
+            const lrclibResult = await matchLrclibLyrics(targetSong);
+            if (lrclibResult) {
+                return lrclibResult;
+            }
+        } catch (error) {
+            console.error(`[autoMatchBestLyric] LRCLIB search/fetch failed:`, error);
+        }
     }
 
     console.log(`[autoMatchBestLyric] No reliable lyric match found.`);

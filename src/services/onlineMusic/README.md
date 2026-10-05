@@ -14,7 +14,7 @@ UI / hooks / stores / app services
   -> src/types/onlineMusic.ts（共享合同）
 ```
 
-当前 registry 只内置注册 `qq`（QQ 音乐是唯一的内置在线 provider；Folium mod 可在运行时注册额外 provider）。Navidrome 是独立的 Subsonic 服务，入口是 `src/services/navidromeService.ts`，不属于 Omni provider。
+当前 registry 只内置注册 `qq`（QQ 音乐是唯一的内置在线 provider；Folium mod 可在运行时注册额外 provider）。LRCLIB 只是歌词源（`src/utils/lyrics/providers/lrclibLyricProvider.ts`，经 `lyricMatchSources.ts` 与 `autoMatchBestLyric.ts` 接入），不是 Omni provider，没有曲库、播放和账户能力，也不能提供元数据与封面。Navidrome 是独立的 Subsonic 服务，入口是 `src/services/navidromeService.ts`，不属于 Omni provider。
 
 ## Public contract
 

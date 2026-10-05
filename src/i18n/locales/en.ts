@@ -1100,6 +1100,7 @@ export default {
   },
   "lyricProvider": {
     "qq": "QQ Music",
+    "lrclib": "LRCLIB",
     "online": "Online lyrics",
   },
   "globalLyricOffset": {
@@ -1466,7 +1467,7 @@ export default {
     "disableHomeDynamicBackgroundDesc": "When enabled, the home page stops background animation to reduce GPU usage.",
     "disableHomeDynamicBackgroundWarning": "Off by default, so dynamic background remains enabled unless you turn this on.",
     "autoUseBestLyric": "Auto Use Best Lyric",
-    "autoUseBestLyricDesc": "Automatically search QQ Music lyrics, prioritizing word-by-word lyrics with perfect timing matches.",
+    "autoUseBestLyricDesc": "Automatically search QQ Music lyrics (falling back to LRCLIB when QQ Music has none), prioritizing word-by-word lyrics with perfect timing matches.",
     "localLyricsPriority": "Local song lyrics priority",
     "localLyricsPriorityDesc": "Choose which lyrics are used first when a local song also has an online match. Manual lyric source choices are preserved.",
     "localLyricsPriorityLocal": "Local lyrics",
@@ -4084,7 +4085,7 @@ export default {
         "next": "Switch to \u201cafter the current song\u201d and what you add slots in right behind whatever is playing, so it is up next. This changes every add-to-queue entry point in the app \u2014 the button on a card, the one that appears on a queue row, the command in the palette."
       },
       "lyricsSource": {
-        "autoBest": "With \u201cpick the best automatically\u201d on, Folia searches QQ Music for this song and takes a perfectly matched word-by-word version when one exists. The cost is that it overrides the source you picked by hand on the source tab \u2014 if a manual pick did not stick, this is usually why.",
+        "autoBest": "With \u201cpick the best automatically\u201d on, Folia searches QQ Music (and LRCLIB when QQ Music has nothing) for this song and takes a perfectly matched word-by-word version when one exists. The cost is that it overrides the source you picked by hand on the source tab \u2014 if a manual pick did not stick, this is usually why.",
         "priority": "The two cards below decide whether local or online lyrics win. When a local file carries lyrics and an online match also exists, this is what settles it.",
         "globalOffset": "\u201cGlobal timeline offset\u201d opens a full-screen ruler that shifts every song\u2019s lyrics earlier or later \u2014 usually to compensate for a fixed sound-card or Bluetooth delay.",
         "offsetSum": "It shares a name with the \u00b1250ms offset on the source tab but is not the same thing: that one is for the current song only and is gone when you change tracks, this one is global and lasting. The two add up, so when one song is badly out, check both."

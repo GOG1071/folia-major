@@ -110,7 +110,7 @@ https://github.com/user-attachments/assets/704f195a-2194-434b-86e8-8f36290e5cc4
 | --- | --- |
 | 在线搜索与播放 | 搜索歌曲、歌手或专辑后即可播放，并自动加载相关封面与歌词。 |
 | 本地音乐支持 | 可导入本地音频文件，在本地安全保存索引信息，不上传文件内容。详细用法见 [本地音乐库管理](docs/local-library-management.md)。 |
-| 智能歌词匹配 | 本地歌曲可自动匹配在线歌词与封面，也支持手动修正匹配结果。 |
+| 智能歌词匹配 | 本地歌曲可自动匹配在线歌词与封面，也支持手动修正匹配结果。歌词来源为 QQ 音乐和 [LRCLIB](https://lrclib.net)：自动匹配先问 QQ 音乐（逐字歌词只有它有），QQ 音乐没有时才用 LRCLIB 的逐行歌词。 |
 | 本地歌词文件识别 | 自动加载同目录同名 `.lrc`、`.vtt`、`.ttml`、`.qrc`、`.yrc`、`.krc` 歌词文件，或歌词文件内嵌 LRC 歌词。适配 LDDC 生成的增强型逐字歌词格式。 |
 | Now Playing 接入 | 支持通过本机 [Now Playing](https://github.com/Widdit/now-playing-service/) 服务接入外部播放器的歌曲、时间轴与歌词信息，并驱动 Folia 的舞台视图与全屏歌词渲染。 |
 | YouTube 链接播放 | 桌面版内置 [yt-dlp](https://github.com/yt-dlp/yt-dlp)：在搜索框粘贴 YouTube 链接并回车，或使用命令面板的“播放 YouTube 链接”，即可下载音频并在播放器中播放，歌词自动从 QQ 音乐匹配。详见 [YouTube 链接播放](#youtube-链接播放桌面版)。 |

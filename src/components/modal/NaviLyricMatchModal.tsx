@@ -17,6 +17,7 @@ import {
     type LyricMatchSource,
 } from './lyricMatchResultHelpers';
 import { LyricPreviewPanel } from './LyricPreviewPanel';
+import { LyricMatchSourceTabs } from './LyricMatchSourceTabs';
 import { getSizedCoverUrl } from '../../utils/coverUrl';
 import { getProviderSongMetadata } from '../../services/onlineMusic/songMetadata';
 import { hasRenderableLyrics } from '../../utils/lyrics/validity';
@@ -76,8 +77,7 @@ const NaviLyricMatchModal: React.FC<NaviLyricMatchModalProps> = ({ song, onClose
 
     // Online data toggle state
     const [lyricsSource, setLyricsSource] = useState<'navi' | 'online'>('online');
-    // QQ Music is the only lyric match source, so there is nothing to switch between.
-    const source: LyricMatchSource = LYRIC_MATCH_SOURCES[0];
+    const [source, setSource] = useState<LyricMatchSource>(LYRIC_MATCH_SOURCES[0]);
 
     const navidromeMetadata = getProviderSongMetadata(song);
     const navidromeArtist = navidromeMetadata.artists.map(a => a.name).join(', ');
@@ -254,6 +254,7 @@ const NaviLyricMatchModal: React.FC<NaviLyricMatchModalProps> = ({ song, onClose
                     {/* LEFT PANEL */}
                     <div className={`w-[62%] flex flex-col border-r ${borderColor}`}>
                         <div className="p-4">
+                            <LyricMatchSourceTabs source={source} onChange={setSource} isDaylight={isDaylight} className="mb-3.5" />
                             <form
                                 onSubmit={(e) => {
                                     e.preventDefault();
