@@ -14,7 +14,7 @@ test('enters Sonnet from settings and exposes its layer controls', async ({ page
         localStorage.setItem('static_mode', 'true');
         localStorage.setItem('folia_last_seen_ponder_onboarding_version', version);
     }, APP_VERSION);
-    await page.route('**/__mock_netease__/**', async (route) => {
+    await page.route('**/__mock_qq__/**', async (route) => {
         await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
     });
     await page.goto('/');

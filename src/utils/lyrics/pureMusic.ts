@@ -21,24 +21,6 @@ const PURE_MUSIC_NOTICE_LINE = new RegExp(`^${NOTICE_PREFIX}[纯純]音[乐樂]�
 const HEADER_LINE_PATTERN = /\s[-–—]\s/;
 const isStaffCreditLine = createStaffCreditMatcher();
 
-export const hasNeteasePureMusicFlag = (source?: {
-    pureMusic?: boolean;
-    lrc?: { pureMusic?: boolean };
-    yrc?: { pureMusic?: boolean };
-    ytlrc?: { pureMusic?: boolean };
-    tlyric?: { pureMusic?: boolean };
-} | null): boolean => {
-    if (!source) return false;
-
-    return Boolean(
-        source.pureMusic
-        || source.lrc?.pureMusic
-        || source.yrc?.pureMusic
-        || source.ytlrc?.pureMusic
-        || source.tlyric?.pureMusic
-    );
-};
-
 // 拆成去掉各类时间标签的非空行，并丢掉整行 JSON 元数据。
 const splitCleanLyricLines = (text?: string | null): string[] => {
     if (!text) return [];

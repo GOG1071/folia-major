@@ -30,7 +30,7 @@ description: Use when implementing, refactoring, or reviewing code in this repos
 - 在线歌曲统一入口：`src/services/onlineMusic/omni.ts`、`src/types/onlineMusic.ts`
 - 本地库索引与命名：`src/utils/localLibraryIndex.ts`、`localLibraryNames.ts`、`localLibraryResolver.ts`
 - Stage / OBS / PlayerCap 数据转换：`src/utils/appStageHelpers.ts`、`src/utils/stageClientDemo.ts`、`src/utils/stagePlayerSnapshot.ts`、`src/utils/obs*.ts`、`src/utils/playerCap*.ts`
-- 网易云 / Navidrome / 本地音乐 API：`src/services/netease.ts`、`navidromeService.ts`、`localMusicService.ts`
+- Navidrome / 本地音乐 API：`navidromeService.ts`、`localMusicService.ts`
 - 主题、封面、取色、缓存：`src/hooks/themeControllerState.ts`、`src/utils/colorExtractor.ts`、`src/services/themeCache.ts`、`src/services/coverCache.ts`
 - UI 图标、动画、弹窗、选择器：`lucide-react`、`framer-motion`、`components/shared/*`
 
@@ -248,7 +248,6 @@ const { t } = useTranslation();
 
 不要绕过现有 service：
 
-- 网易云 API：`src/services/netease.ts`
 - Navidrome / Subsonic：`src/services/navidromeService.ts`
 - 本地音乐：`src/services/localMusicService.ts`
 - 在线歌曲搜索、播放、歌词、歌单、账户和 provider 路由：`src/services/onlineMusic/omni.ts`

@@ -9,10 +9,8 @@ import { create } from 'zustand';
 import { getLyricFilterError } from '../utils/lyrics/filtering';
 import { getLyricStaffPatternError } from '../utils/lyrics/staffCredits';
 import i18n from '../i18n/config';
-import { type LocalLyricsPriority, type LyricProviderSource } from '../types';
-import { getLyricProviderPreferenceLabel } from '../utils/lyrics/lyricSourceLabels';
+import { type LocalLyricsPriority } from '../types';
 import { normalizeLocalLyricFormatOrder, type LocalLyricFileFormat } from '../utils/lyrics/localLyricFormatOrder';
-import { migratePreferredLyricSource } from '../utils/lyrics/sourcePriority';
 import { DEFAULT_LYRIC_STAFF_ABSORB_MODE, DEFAULT_LYRIC_STAFF_MIN_DWELL_SECONDS, DEFAULT_LYRIC_STAFF_POLICY, LYRIC_STAFF_MIN_DWELL_RANGE, type LyricStaffAbsorbMode, type LyricStaffPolicy } from '../utils/lyrics/staffCreditsPolicy';
 import { getStoredBoolean, getStoredString, setStoredBoolean } from './storagePrimitives';
 import { setStatusMessage } from './useStatusMessageStore';
@@ -39,7 +37,6 @@ const readStoredGlobalLyricTimelineOffsetMs = (): number => {
     return clampGlobalLyricTimelineOffsetMs(Number(localStorage.getItem(GLOBAL_LYRIC_TIMELINE_OFFSET_STORAGE_KEY)));
 };
 
-const PREFERRED_LYRIC_SOURCE_STORAGE_KEY_V2 = 'preferred_alternative_lyric_source_v2';
 
 export const LOCAL_LYRICS_PRIORITY_STORAGE_KEY = 'local_lyrics_priority';
 
@@ -59,17 +56,6 @@ const readStoredLocalLyricFormatOrder = (): LocalLyricFileFormat[] => {
     } catch {
         return normalizeLocalLyricFormatOrder(null);
     }
-};
-
-const readStoredPreferredAlternativeLyricSource = (): LyricProviderSource => {
-    if (typeof window === 'undefined') return 'qq';
-    const versioned = localStorage.getItem(PREFERRED_LYRIC_SOURCE_STORAGE_KEY_V2);
-    const legacy = localStorage.getItem('preferred_alternative_lyric_source');
-    const migrated = migratePreferredLyricSource(versioned, legacy);
-    if (versioned !== migrated) {
-        localStorage.setItem(PREFERRED_LYRIC_SOURCE_STORAGE_KEY_V2, migrated);
-    }
-    return migrated;
 };
 
 const readStoredLyricFilterPattern = (): string => {
@@ -122,7 +108,6 @@ const readStoredLyricStaffAbsorbMode = (): LyricStaffAbsorbMode => {
 
 export type LyricSettingsState = {
     autoUseBestLyric: boolean;
-    preferredAlternativeLyricSource: LyricProviderSource;
     localLyricsPriority: LocalLyricsPriority;
     localLyricFormatOrder: LocalLyricFileFormat[];
     globalLyricTimelineOffsetMs: number;
@@ -134,7 +119,6 @@ export type LyricSettingsState = {
     lyricStaffAbsorbMode: LyricStaffAbsorbMode;
     lyricStaffPattern: string;
     handleToggleAutoUseBestLyric: (enable: boolean) => void;
-    handleSetPreferredAlternativeLyricSource: (source: LyricProviderSource) => void;
     handleSetLocalLyricsPriority: (priority: LocalLyricsPriority) => void;
     handleSetLocalLyricFormatOrder: (order: LocalLyricFileFormat[]) => void;
     handleSetGlobalLyricTimelineOffsetMs: (offsetMs: number) => void;
@@ -150,7 +134,6 @@ const initialLyricFilterPattern = readStoredLyricFilterPattern();
 
 export const useLyricSettingsStore = create<LyricSettingsState>((set, get) => ({
     autoUseBestLyric: getStoredBoolean('auto_use_best_lyric', true),
-    preferredAlternativeLyricSource: readStoredPreferredAlternativeLyricSource(),
     localLyricsPriority: readStoredLocalLyricsPriority(),
     localLyricFormatOrder: readStoredLocalLyricFormatOrder(),
     globalLyricTimelineOffsetMs: readStoredGlobalLyricTimelineOffsetMs(),
@@ -166,16 +149,6 @@ export const useLyricSettingsStore = create<LyricSettingsState>((set, get) => ({
         setStatusMessage({
             type: 'info',
             text: i18n.t('notifications.' + (enable ? 'autoBestLyricOn' : 'autoBestLyricOff')),
-        });
-    },
-    handleSetPreferredAlternativeLyricSource: (source) => {
-        if (typeof window !== 'undefined') {
-            localStorage.setItem(PREFERRED_LYRIC_SOURCE_STORAGE_KEY_V2, source);
-        }
-        set({ preferredAlternativeLyricSource: source });
-        setStatusMessage({
-            type: 'info',
-            text: i18n.t('notifications.lyricSourceChanged', { source: getLyricProviderPreferenceLabel(source) }),
         });
     },
     handleSetLocalLyricsPriority: (priority) => {
@@ -266,7 +239,6 @@ export const useLyricSettingsStore = create<LyricSettingsState>((set, get) => ({
 /** The lyric-sourcing half of the former settings snapshot. */
 export const selectLyricSettingsSnapshot = (state: LyricSettingsState) => ({
     autoUseBestLyric: state.autoUseBestLyric,
-    preferredAlternativeLyricSource: state.preferredAlternativeLyricSource,
     localLyricsPriority: state.localLyricsPriority,
     localLyricFormatOrder: state.localLyricFormatOrder,
     globalLyricTimelineOffsetMs: state.globalLyricTimelineOffsetMs,
@@ -277,7 +249,6 @@ export const selectLyricSettingsSnapshot = (state: LyricSettingsState) => ({
     lyricStaffAbsorbMode: state.lyricStaffAbsorbMode,
     lyricStaffPattern: state.lyricStaffPattern,
     handleToggleAutoUseBestLyric: state.handleToggleAutoUseBestLyric,
-    handleSetPreferredAlternativeLyricSource: state.handleSetPreferredAlternativeLyricSource,
     handleSetLocalLyricsPriority: state.handleSetLocalLyricsPriority,
     handleSetLocalLyricFormatOrder: state.handleSetLocalLyricFormatOrder,
     handleSetGlobalLyricTimelineOffsetMs: state.handleSetGlobalLyricTimelineOffsetMs,

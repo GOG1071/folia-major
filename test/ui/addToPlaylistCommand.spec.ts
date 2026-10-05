@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { installBaseState, localImportFixture, mockNeteaseApi, openApp } from './helpers/appFixtures';
+import { installBaseState, localImportFixture, mockQqApi, openApp } from './helpers/appFixtures';
 
 // test/ui/addToPlaylistCommand.spec.ts
 // 歌单选择器从 UnifiedPanel 里搬了出来，于是有两条都必须成立：命令能在面板关着的时候
@@ -24,8 +24,8 @@ const seedLocalSong = (page: Page) => page.evaluate(async () => {
 });
 
 const openLocalLibrary = async (page: Page) => {
-    await installBaseState(page, { neteaseMode: 'guest', localImportFixture });
-    await mockNeteaseApi(page, 'guest');
+    await installBaseState(page, { qqMode: 'guest', localImportFixture });
+    await mockQqApi(page, 'guest');
     await openApp(page);
     await page.getByRole('button', { name: 'Folder' }).last().click();
     await page.getByRole('button', { name: 'Import Folder' }).last().click();

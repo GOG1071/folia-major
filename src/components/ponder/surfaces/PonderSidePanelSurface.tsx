@@ -275,20 +275,11 @@ const ModeListPage: React.FC<PageProps> = ({ accent, line, outline }) => (
 /**
  * 电台页：私人 FM 打开时，队列那一格整格换成它。
  *
- * 顶上那枚胶囊开的是命令窗口里的电台模式选择器；下面三颗是传送；最底下一对是
+ * 上面三颗是传送；最底下一对是
  * 扔掉和喜欢 —— 扔掉会告诉服务别再放这首，不是从一份清单里移掉一行。
  */
 const FmPage: React.FC<PageProps> = ({ accent, line, outline }) => (
     <div data-ponder-panel-fm style={relativeRectStyle(G.body)}>
-        <span
-            data-ponder-panel-fm-mode
-            className="flex items-center justify-center gap-[8%] rounded-full"
-            style={{ ...relativeRectStyle(F.modeChip), backgroundColor: line }}
-        >
-            <Radio className="h-[52%] w-auto opacity-70" />
-            <span className="h-[18%] w-[44%] rounded-full opacity-60" style={{ backgroundColor: outline }} />
-        </span>
-
         <div data-ponder-panel-fm-transport className="flex items-center justify-center gap-[10%]" style={relativeRectStyle(F.transport)}>
             <SkipBack className="h-[38%] w-auto opacity-45" />
             <span className="flex aspect-square h-full items-center justify-center rounded-full" style={{ backgroundColor: accent, opacity: 0.85 }}>

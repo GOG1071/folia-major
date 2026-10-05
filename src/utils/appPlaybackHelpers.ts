@@ -56,6 +56,8 @@ export const getAudioSrcKind = (audioSrc: string | null): 'empty' | 'blob' | 'ht
     return 'other';
 };
 
+// Keeps one candidate of a comma-joined URL list and upgrades the legacy HTTP music CDN hosts that
+// persisted covers/queues may still carry (music.126.net, from the removed NetEase provider) to HTTPS, so they are not blocked as mixed content.
 export const toSafeRemoteUrl = (url: string | null | undefined): string | null | undefined => {
     if (!url) {
         return url;
@@ -67,47 +69,11 @@ export const toSafeRemoteUrl = (url: string | null | undefined): string | null |
         return normalizedUrl.replace('http:', 'https:');
     }
 
-    try {
-        const parsedUrl = new URL(normalizedUrl);
-        if (
-            parsedUrl.protocol === 'http:' &&
-            parsedUrl.hostname.startsWith('fs.') &&
-            parsedUrl.hostname.endsWith('.kugou.com')
-        ) {
-            return normalizedUrl.replace(/^http:/, 'https:');
-        }
-    } catch {
-        return normalizedUrl;
-    }
-
     return normalizedUrl;
 };
 
-// Keeps KuGou's original HTTP media URL only in Electron; Web/PWA retains HTTPS normalization.
-export const toSafePlaybackUrl = (
-    url: string | null | undefined,
-    isElectron = typeof window !== 'undefined' && Boolean(window.electron)
-): string | null | undefined => {
-    if (!url || !isElectron) {
-        return toSafeRemoteUrl(url);
-    }
-
-    const normalizedUrl = url.split(/,\s*(?=https?:\/\/)/i)[0]?.trim() || url;
-    try {
-        const parsedUrl = new URL(normalizedUrl);
-        if (
-            parsedUrl.protocol === 'http:' &&
-            parsedUrl.hostname.startsWith('fs.') &&
-            parsedUrl.hostname.endsWith('.kugou.com')
-        ) {
-            return normalizedUrl;
-        }
-    } catch {
-        return normalizedUrl;
-    }
-
-    return toSafeRemoteUrl(normalizedUrl);
-};
+// Playback URLs get the same normalization as any remote URL.
+export const toSafePlaybackUrl = (url: string | null | undefined): string | null | undefined => toSafeRemoteUrl(url);
 
 export const resolveDebugSongSource = (song: SongResult | null): 'none' | 'local' | 'navidrome' | 'online' => {
     if (isStagePlaybackSong(song)) {

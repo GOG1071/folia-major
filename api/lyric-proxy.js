@@ -13,11 +13,6 @@ const CORS_HEADERS = {
         'Content-Type',
         'Date',
         'X-Api-Version',
-        'KG-Rec',
-        'KG-RC',
-        'KG-CLIENTTIMEMS',
-        'mid',
-        'x-router',
     ].join(', '),
 };
 const IGNORED_FORWARD_HEADERS = [
@@ -33,12 +28,7 @@ const IGNORED_FORWARD_HEADERS = [
 ];
 function isAllowedLyricProxyHost(hostname) {
     return hostname === 'qq.com' || hostname.endsWith('.qq.com') ||
-        hostname === 'y.gtimg.cn' ||
-        hostname === 'kugou.com' || hostname.endsWith('.kugou.com') ||
-        hostname === 'amll-ttml-db.stevexmh.net';
-}
-function isAmllDbHost(hostname) {
-    return hostname === 'amll-ttml-db.stevexmh.net';
+        hostname === 'y.gtimg.cn';
 }
 export default async function handler(req, res) {
     // Allow CORS for the proxy
@@ -86,9 +76,6 @@ export default async function handler(req, res) {
             }
         }
         const response = await fetch(targetUrl.toString(), fetchOptions);
-        if (isAmllDbHost(hostname) && response.status === 404) {
-            return res.status(204).end();
-        }
         const contentType = response.headers.get('content-type') || '';
         // Forward response headers
         res.setHeader('Content-Type', contentType);

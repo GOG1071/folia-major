@@ -3,14 +3,19 @@ import { APP_VERSION, GUIDE_VERSION_STORAGE_KEY, waitForAppMounted } from '../..
 import { MOTION_SURFACE_IDS } from '../../../src/stores/useMotionSettingsStore';
 
 // test/ui/helpers/appFixtures.ts
-// The mocked Netease / Navidrome / local-library world the UI specs boot the app into.
+// The mocked QQ Music / Navidrome / local-library world the UI specs boot the app into.
 //
 // This used to live inside app.screenshot.spec.ts, which is where it was written and where it was
 // stuck: any other spec that needed a real, populated home surface had to either re-mock all of it
 // or give up and test something narrower. The screenshots still use exactly what they always did.
 
 
-export type MockNeteaseMode = 'logged-in' | 'guest';
+export type MockQqMode = 'logged-in' | 'guest';
+
+// 与 playwright.config.ts 里 webServer 注入的 VITE_QQ_API_BASE 同一个路径段，改一处必须改另一处。
+export const QQ_MOCK_ROUTE = '**/__mock_qq__/**';
+export const QQ_SESSION_STORAGE_KEY = 'online_provider:qq:cookie';
+export const QQ_SESSION_COOKIE = 'qqmusic_session=fixture-session-token';
 
 export const NAVIDROME_SERVER = 'http://navidrome.test';
 
@@ -35,48 +40,32 @@ export const createNavidromeCoverSvg = (label: string) =>
     <text x="50%" y="50%" fill="#f8fafc" font-size="56" font-family="Arial, sans-serif" text-anchor="middle" dominant-baseline="middle">${label}</text>
   </svg>`;
 
-export const neteaseFixtures = {
+// 形状取自 qqNormalize.ts 读的上游原始条目：`/login/status` 的 profile、`/user/playlist` 的
+// GetPlaylistByUin 条目（自建歌单带 dirName / songNum / bigpicUrl）。
+export const qqFixtures = {
   profile: {
-    userId: 1001,
+    str_musicid: '1001',
     nickname: 'Fixture Listener',
     avatarUrl: svgDataUrl('User', '#2563eb'),
-    backgroundUrl: svgDataUrl('BG', '#0f172a'),
   },
   playlists: [
     {
-      id: 9001,
-      name: 'Daily Mix',
-      coverImgUrl: svgDataUrl('Mix', '#ef4444'),
-      trackCount: 18,
-      playCount: 1204,
-      updateTime: 1710000000000,
-      trackUpdateTime: 1710000000000,
+      tid: 9001,
+      dirId: 101,
+      dirName: 'Daily Mix',
+      dirShow: 1,
+      songNum: 18,
+      bigpicUrl: svgDataUrl('Mix', '#ef4444'),
     },
     {
-      id: 9002,
-      name: 'Late Night Drive',
-      coverImgUrl: svgDataUrl('Drive', '#7c3aed'),
-      trackCount: 32,
-      playCount: 420,
-      updateTime: 1710000000000,
-      trackUpdateTime: 1710000000000,
+      tid: 9002,
+      dirId: 102,
+      dirName: 'Late Night Drive',
+      dirShow: 1,
+      songNum: 32,
+      bigpicUrl: svgDataUrl('Drive', '#7c3aed'),
     },
   ],
-  cloudSongs: [
-    {
-      id: 7001,
-      name: 'Cloud Archive',
-      ar: [{ id: 11, name: 'Cloud Artist' }],
-      al: {
-        id: 101,
-        name: 'Cloud Album',
-        picUrl: svgDataUrl('Cloud', '#0891b2'),
-      },
-      dt: 185000,
-      t: 1,
-    },
-  ],
-  likedSongIds: [7001, 7002, 7003],
 };
 
 export const navidromeFixtures = {
@@ -186,7 +175,7 @@ export const localImportFixture = {
 export async function installBaseState(
   page: Page,
   options: {
-    neteaseMode?: MockNeteaseMode;
+    qqMode?: MockQqMode;
     navidromeEnabled?: boolean;
     localImportFixture?: typeof localImportFixture;
     preserveNativeMediaQueries?: boolean;
@@ -194,8 +183,10 @@ export async function installBaseState(
 ) {
   await page.addInitScript((payload: {
     navidromeServer: string;
-    neteaseMode: MockNeteaseMode;
+    qqMode: MockQqMode;
     navidromeEnabled: boolean;
+    qqSessionStorageKey: string;
+    qqSessionCookie: string;
     navidromeConfig: typeof navidromeFixtures.config;
     localImportFixture?: typeof localImportFixture;
     appVersion: string;
@@ -250,8 +241,8 @@ export async function installBaseState(
       localStorage.setItem('navidrome_config', JSON.stringify(payload.navidromeConfig));
     }
 
-    if (payload.neteaseMode === 'logged-in') {
-      localStorage.setItem('netease_cookie', 'fixture-cookie');
+    if (payload.qqMode === 'logged-in') {
+      localStorage.setItem(payload.qqSessionStorageKey, payload.qqSessionCookie);
     }
 
     Object.defineProperty(window, 'electron', {
@@ -261,6 +252,9 @@ export async function installBaseState(
         clearAudioCache: async () => {},
         getAudioCacheStats: async () => ({ size: 0, count: 0 }),
         isWindowMaximized: async () => false,
+        // WindowControls 挂载时就会订阅/查询全屏状态；缺了它整棵树会被卸掉，应用永远不脱离 splash。
+        isWindowFullscreen: async () => false,
+        onWindowFullscreenChanged: () => () => {},
       },
     });
 
@@ -410,7 +404,9 @@ export async function installBaseState(
     });
   }, {
     navidromeServer: NAVIDROME_SERVER,
-    neteaseMode: options.neteaseMode ?? 'guest',
+    qqMode: options.qqMode ?? 'guest',
+    qqSessionStorageKey: QQ_SESSION_STORAGE_KEY,
+    qqSessionCookie: QQ_SESSION_COOKIE,
     navidromeEnabled: options.navidromeEnabled ?? false,
     navidromeConfig: navidromeFixtures.config,
     localImportFixture: options.localImportFixture,
@@ -421,74 +417,57 @@ export async function installBaseState(
   });
 }
 
-export async function mockNeteaseApi(page: Page, mode: MockNeteaseMode) {
+// 只覆盖渲染进程真正会打到 qqTransport 的路由（路径见 qqTransport.ts 的 ENDPOINTS）。
+// 未登记的路由回 `{}`：对应 provider 方法要么按「没有数据」处理，要么落到各自的回退分支。
+export async function mockQqApi(page: Page, mode: MockQqMode) {
   let qrConfirmed = false;
-  await page.route('**/__mock_netease__/**', async route => {
+  await page.route(QQ_MOCK_ROUTE, async route => {
     const url = new URL(route.request().url());
-    const endpoint = url.pathname.replace('/__mock_netease__', '');
-
-    if (mode === 'guest' && endpoint === '/login/qr/key') {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { unikey: 'fixture-qr-key' } }) });
-      return;
-    }
-    if (mode === 'guest' && endpoint === '/login/qr/create') {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { qrimg: svgDataUrl('QR', '#ffffff', '#111827') } }) });
-      return;
-    }
-    if (mode === 'guest' && endpoint === '/login/qr/check') {
-      qrConfirmed = true;
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ code: 803, cookie: 'fixture-cookie' }) });
-      return;
-    }
-
-    if (mode === 'guest' && !qrConfirmed) {
-      if (endpoint === '/login/status') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({ data: {} }),
-        });
-        return;
-      }
-    }
-
-    const playlistPayload = neteaseFixtures.playlists.map(playlist => ({
-      ...playlist,
-      creator: neteaseFixtures.profile,
-      description: `${playlist.name} fixture playlist`,
-    }));
-
-    const responses: Record<string, unknown> = {
-      '/login/status': {
-        data: {
-          profile: neteaseFixtures.profile,
-        },
-        cookie: 'fixture-cookie',
-      },
-      '/user/account': {
-        account: {
-          id: neteaseFixtures.profile.userId,
-        },
-        profile: neteaseFixtures.profile,
-      },
-      '/user/playlist': {
-        playlist: playlistPayload,
-      },
-      '/user/cloud': {
-        count: neteaseFixtures.cloudSongs.length,
-        songs: neteaseFixtures.cloudSongs,
-      },
-      '/likelist': {
-        ids: neteaseFixtures.likedSongIds,
-      },
-    };
-
-    const body = responses[endpoint] ?? {};
-    await route.fulfill({
+    const endpoint = url.pathname.replace('/__mock_qq__', '');
+    const json = (body: unknown) => route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(body),
     });
+
+    // 只声明一个通道：provider 会跳过通道选择器直接进单步扫码流程，登录用例不必多点一次。
+    if (endpoint === '/login/channels') {
+      await json({ data: { channels: ['wechat'] } });
+      return;
+    }
+    if (mode === 'guest' && endpoint === '/login/qr/key') {
+      await json({ data: { unikey: 'fixture-qr-key' } });
+      return;
+    }
+    if (mode === 'guest' && endpoint === '/login/qr/create') {
+      await json({ data: { qrimg: svgDataUrl('QR', '#ffffff', '#111827') } });
+      return;
+    }
+    if (mode === 'guest' && endpoint === '/login/qr/check') {
+      qrConfirmed = true;
+      await json({ code: 803, cookie: QQ_SESSION_COOKIE });
+      return;
+    }
+
+    const isSignedIn = mode === 'logged-in' || qrConfirmed;
+    if (endpoint === '/login/status') {
+      await json(isSignedIn ? { data: { profile: qqFixtures.profile } } : { data: {} });
+      return;
+    }
+    if (endpoint === '/user/playlist') {
+      await json(isSignedIn ? { playlist: qqFixtures.playlists, total: qqFixtures.playlists.length } : { playlist: [] });
+      return;
+    }
+    if (endpoint === '/user/albums') {
+      await json({ albums: [], total: 0, more: false });
+      return;
+    }
+    if (endpoint === '/user/liked-songs') {
+      await json({ songs: [], total: 0, more: false });
+      return;
+    }
+
+    await json({});
   });
 }
 

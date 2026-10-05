@@ -14,7 +14,7 @@ export function Wall({ count }: { count: number }) {
     const queue = useMemo<SongResult[]>(() => Array.from({ length: count }, (_, index) => ({
         id: `perf-${index}`, name: `${TITLES[index % TITLES.length]} · ${index}`, artists: [{ id: 1, name: 'HOYO-MiX' }],
         album: { id: 1, name: 'Probe' }, durationMs: 180000,
-        sourceRef: { kind: 'online', providerId: 'netease', mediaId: `perf-${index}` },
+        sourceRef: { kind: 'online', providerId: 'qq', mediaId: `perf-${index}` },
     })), [count]);
     return <Lattice queue={queue} currentSong={null} playerState={PlayerState.PAUSED} currentTime={time}
         playbackDuration={180} canTogglePlayback={false} isDaylight={false} lyrics={null}

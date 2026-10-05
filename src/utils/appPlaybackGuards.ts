@@ -4,6 +4,7 @@ import type { NavidromeSong } from '../types/navidrome';
 import type { OnlineProviderId, PlaybackSourceRef } from '../types/onlineMusic';
 
 // Runtime guards for the unified playback song model.
+const LEGACY_UNSOURCED_PROVIDER_ID: OnlineProviderId = 'netease';
 export type PlaybackSongSource = OnlineProviderId | 'local' | 'navidrome' | 'youtube' | 'stage';
 
 export const isNavidromePlaybackSong = (song: SongResult | null | undefined): song is NavidromeSong => {
@@ -59,14 +60,11 @@ export const getPlaybackSourceRef = (song: SongResult): PlaybackSourceRef => {
         const carrier = resolveNavidromePlaybackCarrier(song);
         return { kind: 'navidrome', mediaId: String(carrier?.navidromeData.id || song.id) };
     }
-    const isLegacyCloudSong = song.sourceType === 'cloud' || song.t === 1 || song.t === 2;
-    const providerId: OnlineProviderId = (song as any).providerId || 'netease';
-    return {
-        kind: 'online',
-        providerId,
-        mediaId: String(song.id),
-        ...(isLegacyCloudSong ? { variant: 'cloud' } : {}),
-    };
+    // Songs persisted before `sourceRef` existed were all NetEase. That provider is gone, so such a
+    // record keeps its old id and resolves as an unregistered provider (unsupported) instead of being
+    // mistaken for a QQ song with a foreign media id.
+    const providerId: OnlineProviderId = (song as any).providerId || LEGACY_UNSOURCED_PROVIDER_ID;
+    return { kind: 'online', providerId, mediaId: String(song.id) };
 };
 
 // Upgrades legacy persisted songs before they enter source-aware playback paths.

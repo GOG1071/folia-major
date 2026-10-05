@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { APP_VERSION, GUIDE_VERSION_STORAGE_KEY, waitForAppMounted } from '../helpers/appState';
+import { APP_VERSION, GUIDE_VERSION_STORAGE_KEY, waitForAppMounted, withQqSourceRef } from '../helpers/appState';
 
 // test/ui/videoLayer.spec.ts
 // The built-in video layer behind the lyrics and Sora's blank mode, in the real app: the layer mounts
@@ -10,7 +10,7 @@ const VIDEO_URL = 'https://video.test/loop.mp4';
 
 const QUEUE_FIXTURE = [
     { id: 1, name: 'Current', artists: [{ id: 10, name: 'Alpha' }], album: { id: 20, name: 'Album' }, durationMs: 180_000 },
-];
+].map(withQqSourceRef);
 
 const seedAndOpen = async (page: Page, storage: Record<string, string>) => {
     await page.addInitScript(([version, guideKey, entries]) => {
@@ -19,7 +19,7 @@ const seedAndOpen = async (page: Page, storage: Record<string, string>) => {
         localStorage.setItem(guideKey, version);
         for (const [key, value] of Object.entries(entries)) localStorage.setItem(key, value);
     }, [APP_VERSION, GUIDE_VERSION_STORAGE_KEY, storage] as const);
-    await page.route('**/__mock_netease__/**', route => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
+    await page.route('**/__mock_qq__/**', route => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
     await page.route('https://video.test/**', route => route.abort());
     await page.goto('/');
     await waitForAppMounted(page);

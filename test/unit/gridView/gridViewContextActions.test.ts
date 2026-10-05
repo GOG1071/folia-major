@@ -1,16 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { SongResult } from '../../../src/types';
 import { resolveGridViewContextTracks } from '../../../src/components/folia-grid/gridViewContextActions';
 
 // test/unit/gridView/gridViewContextActions.test.ts
 
-const buildTrack = (id: number, name: string, unavailable = false): SongResult => ({
+// Availability is provider-owned; the test stands in for a provider that flags one marked song.
+vi.mock('../../../src/services/onlineMusic/songAvailability', () => ({
+    isSongUnavailable: (song: { name?: string } | null | undefined) => song?.name === 'Unavailable',
+}));
+
+const buildTrack = (id: number, name: string): SongResult => ({
     id,
     name,
     artists: [],
     album: { id, name: 'Album' },
     durationMs: 180000,
-    privilege: unavailable ? { st: -200 } : { st: 0 },
 });
 
 describe('resolveGridViewContextTracks', () => {
@@ -29,7 +33,7 @@ describe('resolveGridViewContextTracks', () => {
 
     it('uses only visible playable tracks when a filter is active', () => {
         const alpha = buildTrack(1, 'Alpha');
-        const unavailable = buildTrack(2, 'Unavailable', true);
+        const unavailable = buildTrack(2, 'Unavailable');
         const gamma = buildTrack(3, 'Gamma');
 
         expect(resolveGridViewContextTracks(

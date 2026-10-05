@@ -17,7 +17,7 @@ function Probe() {
     const [songs] = useState(() => Array.from({ length: 40 }, (_, index) => ({
         id: `d-${index}`, name: TITLES[index % TITLES.length], artists: [{ id: 1, name: 'HOYO-MiX' }],
         album: { id: 1, name: 'Probe' }, durationMs: 180000,
-        sourceRef: { kind: 'online', providerId: 'netease', mediaId: `d-${index}` },
+        sourceRef: { kind: 'online', providerId: 'qq', mediaId: `d-${index}` },
     } satisfies SongResult)));
     const source = useMemo(() => ({ currentTime: time, currentLineIndex: -1, lines: [], theme: DEFAULT_THEME }), [time]);
     return <div style={{ height: '100vh' }}>

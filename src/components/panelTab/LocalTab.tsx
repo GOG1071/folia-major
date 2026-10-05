@@ -103,7 +103,7 @@ const LocalTab: React.FC<LocalTabProps> = ({
             sources.push({ key: 'embedded', label: t('localMusic.statusEmbedded') });
         }
         if ((localData.matchedLyrics?.lines?.length ?? 0) > 0) {
-            sources.push({ key: 'online', label: getLyricProviderLabel(localData.matchedLyricsSource, localData.matchedLyricsProviderPlatform) });
+            sources.push({ key: 'online', label: getLyricProviderLabel(localData.matchedLyricsSource) });
         }
         return sources;
     }, [localData, t]);
@@ -116,7 +116,7 @@ const LocalTab: React.FC<LocalTabProps> = ({
         if (localData.hasLocalLyrics) states.push(t('localMusic.statusLocal'));
         if (localData.hasEmbeddedLyrics) states.push(t('localMusic.statusEmbedded'));
         if ((localData.matchedLyrics?.lines?.length ?? 0) > 0) {
-            states.push(getLyricProviderLabel(localData.matchedLyricsSource, localData.matchedLyricsProviderPlatform));
+            states.push(getLyricProviderLabel(localData.matchedLyricsSource));
         }
         return states.length > 0 ? states.join(' / ') : t('localMusic.statusNone');
     }, [localData, t]);

@@ -19,20 +19,11 @@ export async function handleLyricProxy(request: Request): Promise<Response> {
       'Content-Type',
       'Date',
       'X-Api-Version',
-      'KG-Rec',
-      'KG-RC',
-      'KG-CLIENTTIMEMS',
-      'mid',
-      'x-router',
     ].join(', '),
   };
   const ignoredForwardHeaders = ['host', 'connection', 'content-length', 'origin', 'referer'];
   const isAllowedLyricProxyHost = (hostname: string): boolean =>
-    hostname === 'qq.com' || hostname.endsWith('.qq.com') ||
-    hostname === 'kugou.com' || hostname.endsWith('.kugou.com') ||
-    hostname === 'amll-ttml-db.stevexmh.net';
-  const isAmllDbHost = (hostname: string): boolean =>
-    hostname === 'amll-ttml-db.stevexmh.net';
+    hostname === 'qq.com' || hostname.endsWith('.qq.com');
 
   if (request.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -81,13 +72,6 @@ export async function handleLyricProxy(request: Request): Promise<Response> {
     }
 
     const response = await fetch(targetUrl.toString(), fetchOptions);
-    if (isAmllDbHost(hostname) && response.status === 404) {
-      return new Response(null, {
-        status: 204,
-        headers: corsHeaders,
-      });
-    }
-
     const responseHeaders = new Headers(response.headers);
     
     // Add CORS headers to the response

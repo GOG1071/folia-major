@@ -70,24 +70,6 @@ export interface RawQrcLyric {
     translationContent?: string;
 }
 
-export interface RawNeteaseLyric {
-    type: 'netease';
-    lrc?: {
-        lyric?: string;
-        pureMusic?: boolean;
-        yrc?: { lyric?: string; pureMusic?: boolean };
-        ytlrc?: { lyric?: string; pureMusic?: boolean };
-        yromalrc?: { lyric?: string; pureMusic?: boolean };
-        romalrc?: { lyric?: string; pureMusic?: boolean };
-    };
-    yrc?: { lyric?: string; pureMusic?: boolean };
-    ytlrc?: { lyric?: string; pureMusic?: boolean };
-    yromalrc?: { lyric?: string; pureMusic?: boolean };
-    tlyric?: { lyric?: string; pureMusic?: boolean };
-    romalrc?: { lyric?: string; pureMusic?: boolean };
-    pureMusic?: boolean;
-}
-
 export interface RawNavidromeLyric {
     type: 'navidrome';
     // OpenSubsonic structured lyrics
@@ -100,5 +82,4 @@ export type RawLyricSource =
     | RawEmbeddedLyric 
     | RawLocalFileLyric 
     | RawQrcLyric
-    | RawNeteaseLyric 
     | RawNavidromeLyric;

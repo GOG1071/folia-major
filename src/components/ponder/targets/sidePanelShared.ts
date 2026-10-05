@@ -79,7 +79,6 @@ export const SIDE_PANEL_CONTROLS_ANCHORS = {
 /** 电台页里那三块。私人 FM 打开时，队列那一格整格换成它。 */
 export const SIDE_PANEL_FM_ANCHORS = {
     ...SIDE_PANEL_ANCHORS,
-    fmMode: region('body', F.modeChip, 'ponder.anchors.sidePanel.fmMode'),
     fmTransport: region('body', F.transport, 'ponder.anchors.sidePanel.fmTransport'),
     fmActions: region('body', F.actions, 'ponder.anchors.sidePanel.fmActions'),
 } satisfies Record<string, PonderAnchorSource>;

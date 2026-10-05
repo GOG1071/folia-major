@@ -12,7 +12,7 @@ const getSearchSourceLabel = (sourceTab: SearchSource, context: CommandPaletteCo
     if (sourceTab === 'navidrome') {
         return context.shared.t('commandPalette.sourceNavidrome', 'Navidrome');
     }
-    return context.shared.t('commandPalette.sourceNetease', 'NetEase Cloud Music');
+    return context.shared.t('commandPalette.sourceQq', 'QQ Music');
 };
 
 const buildSearchPreview = (
@@ -101,5 +101,4 @@ export const searchCommands: CommandPaletteCommand[] = [
     createSearchCommand('search-current', 'Search songs', 'Search songs in the current source', ['search', 'find', 'song', '搜索', '搜歌'], context => context.search.currentSearchSourceTab, { executeShortcut: 'f' }),
     createSearchCommand('search-local', 'Search local songs', 'Search local library', ['local', 'local search', 'search local', '本地', '本地音乐'], () => 'local'),
     createSearchCommand('search-navidrome', 'Search Navidrome songs', 'Search Navidrome library', ['navi', 'navidrome', 'search navidrome', '导航', '服务器'], () => 'navidrome'),
-    createSearchCommand('search-netease', 'Search NetEase songs', 'Search NetEase Cloud Music', ['netease', 'cloud', 'search netease', '网易云', '网抑云'], () => 'netease'),
 ];

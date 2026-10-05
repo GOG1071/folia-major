@@ -12,7 +12,7 @@ import type { GridViewCollectionDescriptor } from '@/components/app/home/gridVie
 
 const album = (id: string | number): GridViewCollectionDescriptor => ({
     source: 'online',
-    providerId: 'netease',
+    providerId: 'qq',
     id,
     name: `Album ${id}`,
     type: 'album',
@@ -20,7 +20,7 @@ const album = (id: string | number): GridViewCollectionDescriptor => ({
 
 const artist = (id: string | number): GridViewCollectionDescriptor => ({
     source: 'online',
-    providerId: 'netease',
+    providerId: 'qq',
     id,
     name: `Artist ${id}`,
     type: 'artist',

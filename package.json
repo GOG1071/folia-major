@@ -33,9 +33,6 @@
     "test:ui:update": "playwright test --update-snapshots",
     "test:render": "playwright test -c playwright.probe.config.ts",
     "benchmark:lyrics": "npx tsx test/manual/lyrics_benchmark.ts",
-    "manual:lyrics": "npx tsx test/manual/netease_lyrics_cli.ts",
-    "audit:lyrics-sources": "npx tsx test/manual/lyric-audit/index.ts",
-    "probe:netease-xeapi": "node test/manual/netease_xeapi_probe.cjs",
     "manual:wallpaper-watchdog": "npx tsx test/manual/wallpaper-watchdog-sim.ts",
     "manual:analysis-idle": "node test/manual/analysis_idle_release.mts",
     "manual:visualizer-memory": "node test/manual/visualizer-memory-probe.mjs",
@@ -206,7 +203,6 @@
   },
   "dependencies": {
     "@google/genai": "^2.24.0",
-    "@neteasecloudmusicapienhanced/api": "^4.40.1",
     "@xhayper/discord-rpc": "^1.5.1",
     "@yakult-green-tea/qq-music-api": "3.1.2",
     "axios": "^1.20.0",
@@ -215,7 +211,6 @@
     "electron-updater": "^6.8.9",
     "fflate": "^0.8.3",
     "koffi": "^3.3.1",
-    "kugoumusicapi": "https://github.com/MakcRe/KuGouMusicApi/archive/refs/tags/v1.6.0.tar.gz",
     "music-metadata": "^11.16.1",
     "onnxruntime-node": "^1.30.0",
     "ws": "^8.21.3"

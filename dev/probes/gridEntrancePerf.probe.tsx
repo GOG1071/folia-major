@@ -22,7 +22,7 @@ import type { ProbeDefinition } from './definition';
 
 const PLAYLIST = {
     source: 'online',
-    providerId: 'netease',
+    providerId: 'qq',
     id: 'perf-playlist',
     name: 'Perf Playlist',
     type: 'playlist',

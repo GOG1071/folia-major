@@ -10,9 +10,7 @@ import { createLocalLibraryAssignment, resolveEntityNames } from './localLibrary
 
 type LegacyLocalSong = LocalSong & Record<string, unknown>;
 
-const isMetadataSource = (value: unknown): value is LocalSongMetadataSource => (
-  value === 'netease' || value === 'qq' || value === 'kugou'
-);
+const isMetadataSource = (value: unknown): value is LocalSongMetadataSource => value === 'qq';
 
 const readString = (value: unknown): string | undefined => (
   typeof value === 'string' ? cleanLocalLibraryName(value) : undefined
@@ -38,18 +36,27 @@ const readLegacyArtists = (record: Record<string, unknown>) => {
 };
 
 const buildLegacyOnlineMetadata = (record: Record<string, unknown>, now: number): LocalSongOnlineMetadata | undefined => {
-  const source = isMetadataSource(record.matchedMetadataSource)
-    ? record.matchedMetadataSource
-    : (record.matchedSongId !== undefined || record.matchedAlbumId !== undefined ? 'netease' : undefined);
-  const songId = readProviderId(record.matchedMetadataSongId) ?? readProviderId(record.matchedSongId);
-  const albumId = readProviderId(record.matchedMetadataAlbumId) ?? readProviderId(record.matchedAlbumId);
+  // Legacy records matched through NetEase or KuGou keep their title, artists, album and cover as plain
+  // display metadata. Their provider ids belong to services that no longer exist, so they are dropped
+  // rather than being reinterpreted as QQ ids.
+  const isQqRecord = isMetadataSource(record.matchedMetadataSource);
+  const hadProviderMatch = record.matchedMetadataSource !== undefined
+    || record.matchedSongId !== undefined
+    || record.matchedAlbumId !== undefined;
+  const source: LocalSongMetadataSource | undefined = isQqRecord || hadProviderMatch ? 'qq' : undefined;
+  const songId = isQqRecord
+    ? readProviderId(record.matchedMetadataSongId) ?? readProviderId(record.matchedSongId)
+    : undefined;
+  const albumId = isQqRecord
+    ? readProviderId(record.matchedMetadataAlbumId) ?? readProviderId(record.matchedAlbumId)
+    : undefined;
   const title = readString(record.matchedTitle);
   const artists = readLegacyArtists(record);
   const albumName = readString(record.matchedAlbumName);
   const coverUrl = readString(record.matchedCoverUrl);
   if (!source && songId === undefined && !title && artists.length === 0 && !albumName && !coverUrl) return undefined;
   return {
-    source: source || 'netease',
+    source: source || 'qq',
     songId,
     albumId,
     title,

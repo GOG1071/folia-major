@@ -321,7 +321,6 @@ export const SIDE_PANEL_QUEUE_PAGE = {
  * 拖动排序的清单变成了三颗传送按钮加一对喜欢/扔掉。没有队列，也就没有「接下来是什么」。
  */
 export const SIDE_PANEL_FM_PAGE = {
-    modeChip: { left: 0.26, right: 0.26, top: 0.03, height: 0.12 },
     transport: { left: 0.06, right: 0.06, top: 0.26, height: 0.30 },
     actions: { left: 0.16, right: 0.16, top: 0.68, height: 0.26 },
 } satisfies Record<string, PonderRelativeRect>;

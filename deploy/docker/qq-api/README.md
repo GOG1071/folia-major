@@ -4,7 +4,7 @@
 
 本文只说明 Docker 镜像、常驻 Node 服务、卷和状态文件。Vercel、Cloudflare、Durable Object 与面向普通用户的完整步骤见 [QQ 音乐部署指南](../../../docs/qq-music-deployment.md)。
 
-服务本体来自 npm 包，本目录只有一份锁定版本的 `package.json` 与 `package-lock.json`，与 `netease-api`、`kugou-api` 的做法一致，仓库里不放任何后端源码。
+服务本体来自 npm 包，本目录只有一份锁定版本的 `package.json` 与 `package-lock.json`，仓库里不放任何后端源码。
 
 | 项 | 内容 |
 | --- | --- |

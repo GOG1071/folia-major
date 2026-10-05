@@ -22,8 +22,6 @@
                     <a href="#status">GET /stage/status</a>
                     <a href="#lyrics">POST /stage/lyrics</a>
                     <a href="#session">POST /stage/session</a>
-                    <a href="#search">POST /stage/player/search</a>
-                    <a href="#play">POST /stage/player/play</a>
                     <a href="#player-status">GET /stage/player/status</a>
                     <a href="#player-time">GET /stage/player/time</a>
                     <a href="#player-control">POST /stage/player/control</a>
@@ -103,16 +101,6 @@
                             <span class="method-chip method-post">POST</span>
                             <code>/stage/session</code>
                             <p class="hint">Push media session by URL or file.</p>
-                        </article>
-                        <article class="endpoint-chip-card">
-                            <span class="method-chip method-post">POST</span>
-                            <code>/stage/player/search</code>
-                            <p class="hint">Search Netease songs.</p>
-                        </article>
-                        <article class="endpoint-chip-card">
-                            <span class="method-chip method-post">POST</span>
-                            <code>/stage/player/play</code>
-                            <p class="hint">Trigger Folia playback.</p>
                         </article>
                         <article class="endpoint-chip-card">
                             <span class="method-chip method-get">GET</span>
@@ -226,7 +214,7 @@
                                 <div><dt>title</dt><dd>可选，歌曲标题。</dd></div>
                                 <div><dt>artist</dt><dd>可选，歌手名。</dd></div>
                                 <div><dt>album</dt><dd>可选，专辑名。</dd></div>
-                                <div><dt>lyricSource</dt><dd>必填，完整歌词来源对象，`type` 需为 `embedded`、`local`、`navidrome` 或 `netease`。</dd></div>
+                                <div><dt>lyricSource</dt><dd>必填，完整歌词来源对象，`type` 需为 `embedded`、`local` 或 `navidrome`。</dd></div>
                             </dl>
                             <h4>cURL example</h4>
                             <pre id="lyrics-example" class="code-example"></pre>
@@ -351,81 +339,6 @@
                             <pre id="session-preview" class="request-preview"></pre>
                             <div id="session-status" class="status-line">No request sent yet.</div>
                             <pre id="session-response" class="response-output"></pre>
-                        </article>
-                    </div>
-                </section>
-
-                <section id="search" class="doc-section">
-                    <div class="section-header">
-                        <div>
-                            <p class="section-kicker">Endpoint</p>
-                            <h3><span class="method-chip method-post">POST</span><code>/stage/player/search</code></h3>
-                        </div>
-                        <button id="run-search" type="button">Send Request</button>
-                    </div>
-                    <div class="endpoint-layout">
-                        <article class="doc-card">
-                            <p class="hint">搜索网易云结果，返回歌曲列表。结果可直接触发 `/stage/player/play` 或追加到主播放器队列。</p>
-                            <div class="meta-grid">
-                                <div><span class="meta-label">Auth</span><span>Bearer token</span></div>
-                                <div><span class="meta-label">Content-Type</span><span>application/json</span></div>
-                            </div>
-                            <h4>Body fields</h4>
-                            <dl class="field-list">
-                                <div><dt>query</dt><dd>必填，歌曲 / 歌手 / 专辑关键词。</dd></div>
-                                <div><dt>limit</dt><dd>可选，结果数量上限。</dd></div>
-                            </dl>
-                            <h4>cURL example</h4>
-                            <pre id="search-example" class="code-example"></pre>
-                        </article>
-                        <article class="doc-card">
-                            <h4>Interactive request</h4>
-                            <div class="grid two">
-                                <label>
-                                    <span>Query</span>
-                                    <input id="search-query" type="text" value="Mili world.execute (me)" placeholder="Song / artist / album" />
-                                </label>
-                                <label>
-                                    <span>Limit</span>
-                                    <input id="search-limit" type="number" min="1" max="50" value="5" />
-                                </label>
-                            </div>
-                            <pre id="search-preview" class="request-preview"></pre>
-                            <div id="search-status" class="status-line">No request sent yet.</div>
-                            <pre id="search-response" class="response-output compact"></pre>
-                            <div id="search-results" class="playlist-list"></div>
-                        </article>
-                    </div>
-                </section>
-
-                <section id="play" class="doc-section">
-                    <div class="section-header">
-                        <div>
-                            <p class="section-kicker">Endpoint</p>
-                            <h3><span class="method-chip method-post">POST</span><code>/stage/player/play</code></h3>
-                        </div>
-                    </div>
-                    <div class="endpoint-layout">
-                        <article class="doc-card">
-                            <p class="hint">从外部触发 Folia 主播放器点歌。在 /stage/player/search 返回的搜索结果中进行调试</p>
-                            <div class="meta-grid">
-                                <div><span class="meta-label">Auth</span><span>Bearer token</span></div>
-                                <div><span class="meta-label">Trigger</span><span>Search result action</span></div>
-                            </div>
-                            <h4>Body fields</h4>
-                            <dl class="field-list">
-                                <div><dt>songId</dt><dd>必填，正整数歌曲 ID。</dd></div>
-                                <div><dt>appendToQueue</dt><dd>可选，`true` 时只追加到主播放队列，不打断当前播放。（注：Folia 存在自动去重机制，同一歌曲不会在队列中出现两次，若已在队列中则会被移动到目标位置，并通过返回值的 `deduplicated` 字段体现。）</dd></div>
-                            </dl>
-                            <h4>cURL example</h4>
-                            <pre id="play-example" class="code-example"></pre>
-                        </article>
-                        <article class="doc-card">
-                            <h4>Live request preview</h4>
-                            <p class="hint">点击搜索结果中的 `Play In Folia` 或 `Add To Queue` 后，这里会显示实际发送的 `/stage/player/play` 请求。</p>
-                            <pre id="play-preview" class="request-preview">Search results can be played directly back into Folia.</pre>
-                            <div id="play-status" class="status-line">No request sent yet.</div>
-                            <pre id="play-response" class="response-output compact"></pre>
                         </article>
                     </div>
                 </section>
@@ -588,11 +501,11 @@
                             <div class="grid two">
                                 <label>
                                     <span>Queue item ID</span>
-                                    <input id="player-queue-item-id" type="text" placeholder="netease:123456:0" />
+                                    <input id="player-queue-item-id" type="text" placeholder="qq:123456:0" />
                                 </label>
                                 <label>
                                     <span>From queue item ID</span>
-                                    <input id="player-queue-from-item-id" type="text" placeholder="netease:123456:0" />
+                                    <input id="player-queue-from-item-id" type="text" placeholder="qq:123456:0" />
                                 </label>
                             </div>
                             <div class="grid two">

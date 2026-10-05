@@ -13,7 +13,7 @@ Start the line with your module in square brackets:
 
 ```ts
 console.log('[Prefetch] Audio already cached for: Starry Eyes');
-console.warn('[KugouProvider] login-status:error', { name, message });
+console.warn('[QqProvider] login-status:error', { name, message });
 ```
 
 That prefix is the whole convention. The buffer reads it once, at write time, and stores it as the

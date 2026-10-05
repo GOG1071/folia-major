@@ -46,12 +46,12 @@ describe('localSongMatchContext', () => {
     it('keeps a stored candidate as an accelerator after restoring the imported title', () => {
         const context = buildLocalSongLyricMatchContext(song({
             onlineMetadata: {
-                source: 'netease', songId: 321, title: 'Ignored online title', artists: [], matchMode: 'manual', matchedAt: 1,
+                source: 'qq', songId: 321, title: 'Ignored online title', artists: [], matchMode: 'manual', matchedAt: 1,
             },
         }));
 
         expect(context.title).toBe('Wrong title');
-        expect(context.metadataCandidate).toEqual({ source: 'netease', songId: 321 });
+        expect(context.metadataCandidate).toEqual({ source: 'qq', songId: 321 });
     });
 
     it('uses resolved entity names as the canonical lyric search start', () => {
@@ -71,13 +71,13 @@ describe('localSongMatchContext', () => {
         expect(shouldRunLocalSongAutomaticMatch(song({ noAutoMatch: true }))).toBe(false);
         expect(shouldRunLocalSongAutomaticMatch(song({
             noAutoMatch: true,
-            onlineMetadata: { source: 'netease', songId: 321, artists: [], matchMode: 'manual', matchedAt: 1 },
+            onlineMetadata: { source: 'qq', songId: 321, artists: [], matchMode: 'manual', matchedAt: 1 },
         }))).toBe(true);
     });
 
     it('refreshes a legacy automatic lyric result once but preserves manual lyrics', () => {
         const selectedMetadata = {
-            onlineMetadata: { source: 'netease' as const, songId: 321, artists: [], matchMode: 'manual' as const, matchedAt: 1 },
+            onlineMetadata: { source: 'qq' as const, songId: 321, artists: [], matchMode: 'manual' as const, matchedAt: 1 },
             matchedLyrics: { lines: [], isWordByWord: true },
         };
         expect(shouldRefreshLocalSongLyricsFromMetadata(song(selectedMetadata))).toBe(true);

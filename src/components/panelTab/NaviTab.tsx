@@ -46,13 +46,12 @@ const NaviTab: React.FC<NaviTabProps> = ({
     const matchedLyrics = navidromeSong.matchedLyrics;
     const songLyricsSource = navidromeSong.lyricsSource;
     const matchedLyricsSource = navidromeSong.matchedLyricsSource;
-    const matchedLyricsProviderPlatform = navidromeSong.matchedLyricsProviderPlatform;
     const hasMatchedLyrics = (matchedLyrics?.lines?.length ?? 0) > 0;
     const isOnline = hasMatchedLyrics && songLyricsSource === 'online';
     
     let lyricsSourceLabel = t('localMusic.statusNone');
     if (isOnline) {
-        lyricsSourceLabel = getLyricProviderLabel(matchedLyricsSource, matchedLyricsProviderPlatform);
+        lyricsSourceLabel = getLyricProviderLabel(matchedLyricsSource);
     } else if (hasLyrics) {
         lyricsSourceLabel = t('navidrome.server');
     }

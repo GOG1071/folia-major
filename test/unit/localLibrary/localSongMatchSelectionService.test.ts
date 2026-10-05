@@ -81,8 +81,7 @@ describe('applyLocalSongMatchSelection', () => {
             onlineLyrics: {
                 lyrics: { lines: [], isWordByWord: true },
                 songId: 'qq-song-mid',
-                source: 'amll',
-                providerPlatform: 'qq',
+                source: 'qq',
                 isPureMusic: false,
             },
         });
@@ -98,8 +97,7 @@ describe('applyLocalSongMatchSelection', () => {
         expect(mocks.applyMatchedMetadata.mock.calls[0][2].songPatch).toMatchObject({
             lyricsSource: 'online',
             matchedLyricsSongId: 'qq-song-mid',
-            matchedLyricsSource: 'amll',
-            matchedLyricsProviderPlatform: 'qq',
+            matchedLyricsSource: 'qq',
             hasManualLyricSelection: true,
         });
     });

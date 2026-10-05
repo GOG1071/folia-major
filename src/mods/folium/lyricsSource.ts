@@ -136,7 +136,7 @@ export const resolveFoliumLyricsResult = async (raw: unknown, label: string): Pr
     let chosen: FoliumLyricsTrack | null = null;
     let lyrics: LyricData | null = null;
     if (wordByWord) {
-        // Like NetEase's yrc / ytlrc: a word-timed track without its own translation or romanization
+        // Like a yrc / ytlrc pair: a word-timed track without its own translation or romanization
         // borrows the line-timed track's.
         const merged: FoliumLyricsTrack = {
             ...wordByWord,

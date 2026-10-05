@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { APP_VERSION, GUIDE_VERSION_STORAGE_KEY, waitForAppMounted } from '../helpers/appState';
+import { APP_VERSION, GUIDE_VERSION_STORAGE_KEY, waitForAppMounted, withQqSourceRef } from '../helpers/appState';
 
 // test/ui/cursorAutoHide.spec.ts
 // 播放页空闲时的指针隐藏。它没有自己的计时器，跟着控制栏的自动隐藏状态走，所以这里验的是
@@ -9,7 +9,7 @@ import { APP_VERSION, GUIDE_VERSION_STORAGE_KEY, waitForAppMounted } from '../he
 const QUEUE_FIXTURE = [
     { id: 1, name: 'Current', artists: [{ id: 10, name: 'Alpha' }], album: { id: 20, name: 'Shared Album' }, durationMs: 180_000 },
     { id: 2, name: 'Next', artists: [{ id: 11, name: 'Beta' }], album: { id: 21, name: 'Other Album' }, durationMs: 180_000 },
-];
+].map(withQqSourceRef);
 
 const surface = (page: Page) => page.getByTestId('player-visual-surface');
 
@@ -30,7 +30,7 @@ const openPlayerPage = async (page: Page, cursorEnabled: boolean) => {
         localStorage.setItem('player_chrome_visibility_mode', 'auto-hide');
         localStorage.setItem('auto_hide_cursor_with_player_chrome', String(cursor));
     }, [APP_VERSION, GUIDE_VERSION_STORAGE_KEY, cursorEnabled] as const);
-    await page.route('**/__mock_netease__/**', async (route) => {
+    await page.route('**/__mock_qq__/**', async (route) => {
         await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
     });
 

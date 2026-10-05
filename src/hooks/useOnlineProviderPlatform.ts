@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { omni } from '../services/onlineMusic/omni';
 import { useOnlineProviderAccountStore } from '../stores/useOnlineProviderAccountStore';
 import { useSearchNavigationStore } from '../stores/useSearchNavigationStore';
-import type { OnlineProviderId, ProviderAccountSummary } from '../types/onlineMusic';
+import { DEFAULT_ONLINE_PROVIDER_ID, type OnlineProviderId, type ProviderAccountSummary } from '../types/onlineMusic';
 import { useStableCallbacks } from './useStableCallbacks';
 
 // src/hooks/useOnlineProviderPlatform.ts
@@ -84,7 +84,7 @@ export const useOnlineProviderPlatform = (
     const providers = useMemo<ProviderAccountSummary[]>(() => omni.getProviderSummaries(), [accounts, registryVersion]);
     const activeProviderId = providers.some(provider => provider.providerId === storedProviderId)
         ? storedProviderId
-        : 'netease';
+        : DEFAULT_ONLINE_PROVIDER_ID;
     // Reconcile the selection without removing the unavailable provider's account cache.
     useEffect(() => {
         if (storedProviderId !== activeProviderId) setActiveProviderId(activeProviderId);

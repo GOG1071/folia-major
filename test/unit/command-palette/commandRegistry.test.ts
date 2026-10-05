@@ -24,7 +24,7 @@ const createContext = (overrides: CommandPaletteContextOverrides = {}): CommandP
             playerState: PlayerState.PAUSED,
         },
         search: {
-            currentSearchSourceTab: 'netease',
+            currentSearchSourceTab: 'qq',
             localSongs: [],
             localLibraryCatalog: { entities: [], assignments: [] },
             navigateToSearch: vi.fn(),
@@ -41,9 +41,6 @@ const createContext = (overrides: CommandPaletteContextOverrides = {}): CommandP
             canAddCurrentSongToPlaylist: true,
             previewVolume: vi.fn(),
             isFmMode: false,
-            personalFmSelection: { mode: 'DEFAULT' as const, scene: null },
-            isPersonalFmModeSupported: true,
-            setPersonalFmSelection: vi.fn(),
             togglePlay: vi.fn(),
             toggleLoop: vi.fn(),
             next: vi.fn(),
@@ -126,8 +123,6 @@ const createContext = (overrides: CommandPaletteContextOverrides = {}): CommandP
             toggleAutoHideCursorWithPlayerChrome: vi.fn(),
             canAutoScanLocalLibrary: vi.fn(() => false),
             toggleLocalLibraryAutoScan: vi.fn(),
-            canReportNeteasePlayback: vi.fn(() => false),
-            toggleNeteaseScrobble: vi.fn(),
             voiceInputPauseSupported: false,
             modSystemEnabled: false,
             toggleVoiceInputPause: vi.fn(),
@@ -559,8 +554,8 @@ describe('command palette registry', () => {
     it('returns all search commands when context is not provided', () => {
         const matches = getCommandPaletteMatches('search');
         const searchMatches = matches.filter(m => m.command.group === 'search');
-        // search-current, search-local, search-navidrome, search-netease
-        expect(searchMatches.length).toBe(4);
+        // search-current, search-local, search-navidrome
+        expect(searchMatches.length).toBe(3);
     });
 
     it('matches and executes color/theme-park command', () => {
@@ -974,9 +969,8 @@ describe('personal FM withdraws the queue commands', () => {
         QUEUE_COMMAND_IDS.forEach(id => expect(ids).not.toContain(id));
     });
 
-    it('keeps the FM controls and the guarded Lattice entry reachable', () => {
+    it('keeps the next-track control and the guarded Lattice entry reachable', () => {
         const ids = availableIds(true);
-        expect(ids).toContain('playback-fm-mode');
         expect(ids).toContain('playback-next');
         expect(ids).toContain('navigate-lattice');
     });

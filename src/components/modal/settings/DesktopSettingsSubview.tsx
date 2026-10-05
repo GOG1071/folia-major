@@ -689,7 +689,7 @@ const DesktopSettingsSubview: React.FC<DesktopSettingsSubviewProps> = ({
                     <div className="flex items-center justify-between gap-4 p-4">
                         <span className="text-[10px] opacity-45 leading-relaxed max-w-[280px] text-left" style={{ color: 'var(--text-secondary)' }}>
                             {electronSettings.AI_PROVIDER !== 'openai'
-                                ? (t('options.geminiApiKeyDesc') || 'Netease API backend runs locally.')
+                                ? (t('options.geminiApiKeyDesc') || 'Used for AI features.')
                                 : t('options.openaiApiUrlDesc')}
                         </span>
                         <button

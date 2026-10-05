@@ -18,7 +18,9 @@ export interface LocalLibraryEntity {
 export type LocalLibraryAssignmentOrigin = 'import' | 'auto-match' | 'manual-match' | 'manual' | 'split';
 
 export type LocalSongTitleOrigin = 'import' | 'auto-match' | 'manual-match';
-export type LocalSongMetadataSource = 'netease' | 'qq' | 'kugou';
+// Records saved by older builds can carry 'netease' or 'kugou' here; those providers are gone, so such a record is
+// kept as plain display metadata and never used as a lookup identity (see buildLocalSongLyricMatchContext).
+export type LocalSongMetadataSource = 'qq';
 
 export interface LocalSongImportedMetadata {
   title: string;

@@ -15,7 +15,7 @@ This rule applies to search, song detail, audio URLs, availability/replacement, 
 
 `omni` is a facade, not a raw-response escape hatch. Callers consume `UnifiedSong`, `OmniCollection`, `OmniPage`, `OmniLyricsResult`, `OmniAudioSource`, `OmniUser`, and `OmniError`; never make caller code depend on provider-specific field names or envelopes.
 
-Current provider implementation map: `providerRegistry.ts` selects capabilities, `providerAccountCache.ts` and `providerStorage.ts` retain account/session state, `neteaseProvider.ts` and `kugouProvider.ts` normalize provider data, and `kugouTransport.ts` owns KuGou transport details. `navidromeService.ts` is a separate Subsonic service, not an Omni provider.
+Current provider implementation map: `providerRegistry.ts` selects capabilities, `providerAccountCache.ts` and `providerStorage.ts` retain account/session state, `qqProvider.ts` normalizes QQ Music data (QQ is the only online provider), and `qqTransport.ts` owns QQ transport details. LRCLIB is a lyrics-only source wired through `utils/lyrics/lyricMatchSources.ts` and `autoMatchBestLyric.ts`, not an Omni provider: never route songs, playback or metadata through it. `navidromeService.ts` is a separate Subsonic service, not an Omni provider.
 
 ## Decide the boundary before coding
 
@@ -55,11 +55,11 @@ const tracks = await omni.getCollectionTracks(playlist, { limit: 50, offset: 0 }
 For an explicitly selected single provider, retain the same boundary:
 
 ```ts
-const page = await omni.searchProviderSongs('kugou', query, { limit: 30, offset: 0 });
-const capabilities = omni.getProviderCapabilities('kugou');
+const page = await omni.searchProviderSongs('qq', query, { limit: 30, offset: 0 });
+const capabilities = omni.getProviderCapabilities('qq');
 ```
 
-Do not replace these calls with `kugouProvider.search.searchSongs(...)`, `requestKugou(...)`, `neteaseApi(...)`, or a direct `fetch` from a component, hook, store, or app-level feature service.
+Do not replace these calls with `qqProvider.search.searchSongs(...)`, `requestQq(...)`, or a direct `fetch` from a component, hook, store, or app-level feature service.
 
 ## Explicit cross-provider examples
 
@@ -95,7 +95,7 @@ for (const providerId of providers) {
 return [];
 ```
 
-When merging semantically duplicate songs, use an explicit matching policy (for example normalized artist/title/duration) but never discard the original provider ID. A duplicate is not the same playback identity: `online:netease:123` and `online:kugou:123` are different songs until the user or a documented policy chooses one.
+When merging semantically duplicate songs, use an explicit matching policy (for example normalized artist/title/duration) but never discard the original provider ID. A duplicate is not the same playback identity: `online:qq:123` and a hypothetical `online:other:123` are different songs until the user or a documented policy chooses one.
 
 Direct provider calls are still not the default for cross-provider features. Use them only inside the adapter/transport implementation when the cross-provider orchestration needs a capability that Omni does not expose; first extend the Omni contract when the capability is a normal online-song operation.
 
@@ -117,7 +117,7 @@ If Omni lacks a normal capability, add the capability to `src/types/onlineMusic.
 - Treat online identity as `(sourceRef.kind: 'online', sourceRef.providerId, sourceRef.mediaId)`, not `song.id` alone.
 - Use `getPlaybackSourceRef`, `getPlaybackSongKey`, `isSamePlaybackSong`, and existing source-aware helpers before comparing, deduplicating, replacing, or queuing songs.
 - Keep `providerId` on `UnifiedSong`, `SongResult`, collections, catalog references, cache keys, and mutation checks.
-- Route a song mutation through the provider that owns the song. Do not add a Netease song to a KuGou playlist unless the feature explicitly resolves and confirms a cross-provider mapping.
+- Route a song mutation through the provider that owns the song. Do not add a song from one provider to another provider's playlist unless the feature explicitly resolves and confirms a cross-provider mapping.
 - Normalize raw provider data once at the adapter boundary. Callers should receive stable shared types and `OnlineProviderError`/`OmniError` codes.
 - Respect capability and availability checks. An unsupported operation is not an empty successful result; preserve the existing Omni error/empty-page convention.
 - Preserve active-provider request cancellation behavior. Do not cache or apply a late response after the active provider changes.

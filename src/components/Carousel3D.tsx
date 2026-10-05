@@ -4,10 +4,10 @@ import { Loader2, Disc, Map as MapIcon, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getSizedCoverUrl } from '../utils/coverUrl';
 
-// Convert HTTP to HTTPS only for Netease CDN URLs
+// Convert HTTP to HTTPS only for the legacy music CDN URLs older builds persisted
 const toSafeUrl = (url?: string): string | undefined => {
     if (!url) return url;
-    // Only convert Netease CDN URLs to HTTPS
+    // Only convert the legacy CDN URLs to HTTPS
     if (url.startsWith('http:') && url.includes('music.126.net')) {
         return url.replace('http:', 'https:');
     }

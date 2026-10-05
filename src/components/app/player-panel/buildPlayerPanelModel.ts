@@ -81,8 +81,6 @@ export type PlayerPanelDeps = {
     handleClearOnlineLyricsState: () => void;
     handleLyricTimelineOffsetChange: UnifiedPanelProps['playback']['onLyricTimelineOffsetChange'];
     handleChangeReplayGainMode: UnifiedPanelProps['playback']['onChangeReplayGainMode'];
-    fmModeLabel: string;
-    handleOpenFmModePicker?: () => void;
     handleFmTrash: UnifiedPanelProps['playback']['onFmTrash'];
     handleNextTrack: UnifiedPanelProps['playback']['onNextTrack'];
     handlePrevTrack: UnifiedPanelProps['playback']['onPrevTrack'];
@@ -154,8 +152,6 @@ export const buildPlayerPanelModel = ({
     replayGainMode,
     handleChangeReplayGainMode,
     isFmMode,
-    fmModeLabel,
-    handleOpenFmModePicker,
     handleFmTrash,
     handleNextTrack,
     handlePrevTrack,
@@ -241,8 +237,6 @@ export const buildPlayerPanelModel = ({
             replayGainMode,
             onChangeReplayGainMode: handleChangeReplayGainMode,
             isFmMode,
-            fmModeLabel,
-            onOpenFmModePicker: handleOpenFmModePicker,
             onFmTrash: handleFmTrash,
             onNextTrack: handleNextTrack,
             onPrevTrack: handlePrevTrack,

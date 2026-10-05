@@ -29,7 +29,7 @@ const coverUrlFor = (mode: CoverMode, index: number): string | undefined => {
 const buildQueue = (count: number, covers: CoverMode): SongResult[] => Array.from({ length: count }, (_, index) => ({
     id: String(index), name: `Poster ${index}`, artists: [{ id: 1, name: 'Artist' }],
     album: { id: 1, name: 'Album', coverUrl: coverUrlFor(covers, index) }, durationMs: 180000,
-    sourceRef: { kind: 'online', providerId: 'netease', mediaId: String(index) },
+    sourceRef: { kind: 'online', providerId: 'qq', mediaId: String(index) },
 }));
 
 const queue: SongResult[] = buildQueue(12, 'off');

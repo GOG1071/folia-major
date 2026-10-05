@@ -1,4 +1,4 @@
-import { AmllDbPlatform, LocalSong, LyricProviderSource, SongResult, UnifiedSong } from '../types';
+import { LocalSong, LyricProviderSource, SongResult, UnifiedSong } from '../types';
 import { NavidromeSong } from '../types/navidrome';
 import type { LocalLibraryAssignment, LocalLibraryEntity } from '../types/localLibrary';
 import { buildLocalLibraryIndex, followEntityRedirect, type LocalLibraryIndex } from '../utils/localLibraryIndex';
@@ -234,7 +234,6 @@ export function buildUnifiedNavidromeSong(
         matchedArtists?: string;
         matchedAlbumName?: string;
         matchedLyricsSource?: LyricProviderSource;
-        matchedLyricsProviderPlatform?: AmllDbPlatform;
     }
 ): SongResult {
     const displayArtists = (options?.useOnlineMetadata && options.matchedArtists)
@@ -256,7 +255,6 @@ export function buildUnifiedNavidromeSong(
         navidromeData: navidromeSong,
         sourceRef: { kind: 'navidrome', mediaId: navidromeSong.navidromeData.id },
         matchedLyricsSource: options?.matchedLyricsSource,
-        matchedLyricsProviderPlatform: options?.matchedLyricsProviderPlatform
     } as SongResult;
     unifiedSong.playbackSourceRevision = buildNavidromeSourceRevision(
         unifiedSong,

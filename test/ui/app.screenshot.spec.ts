@@ -3,7 +3,7 @@ import {
     installBaseState,
     localImportFixture,
     mockNavidromeApi,
-    mockNeteaseApi,
+    mockQqApi,
     openApp,
 } from './helpers/appFixtures';
 
@@ -13,14 +13,14 @@ import {
 
 
 test.describe('frontend screenshot coverage', () => {
-  test('captures the Netease playlist home view', async ({ page }) => {
-    await installBaseState(page, { neteaseMode: 'logged-in' });
-    await mockNeteaseApi(page, 'logged-in');
+  test('captures the QQ Music playlist home view', async ({ page }) => {
+    await installBaseState(page, { qqMode: 'logged-in' });
+    await mockQqApi(page, 'logged-in');
 
     await openApp(page);
 
     await expect(page.getByRole('heading', { name: 'Daily Mix' }).first()).toBeVisible();
-    await expect(page).toHaveScreenshot('netease-home.png', {
+    await expect(page).toHaveScreenshot('qq-home.png', {
       animations: 'disabled',
       scale: 'css',
       fullPage: true,
@@ -29,10 +29,10 @@ test.describe('frontend screenshot coverage', () => {
 
   test('captures the Navidrome library view with mocked Subsonic responses', async ({ page }) => {
     await installBaseState(page, {
-      neteaseMode: 'logged-in',
+      qqMode: 'logged-in',
       navidromeEnabled: true,
     });
-    await mockNeteaseApi(page, 'logged-in');
+    await mockQqApi(page, 'logged-in');
     await mockNavidromeApi(page);
 
     await openApp(page);
@@ -48,10 +48,10 @@ test.describe('frontend screenshot coverage', () => {
 
   test('captures the local library after importing a mocked folder', async ({ page }) => {
     await installBaseState(page, {
-      neteaseMode: 'guest',
+      qqMode: 'guest',
       localImportFixture,
     });
-    await mockNeteaseApi(page, 'guest');
+    await mockQqApi(page, 'guest');
 
     await openApp(page);
 
@@ -68,8 +68,8 @@ test.describe('frontend screenshot coverage', () => {
 
   test('refreshes the active provider and closes the QR dialog after login', async ({ page }) => {
     test.setTimeout(30_000);
-    await installBaseState(page, { neteaseMode: 'guest' });
-    await mockNeteaseApi(page, 'guest');
+    await installBaseState(page, { qqMode: 'guest' });
+    await mockQqApi(page, 'guest');
 
     await openApp(page);
     await page.getByRole('button', { name: /Connect .* Account/ }).first().click();

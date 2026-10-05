@@ -2,10 +2,10 @@
 //
 // Chromium picks its Linux password backend from `XDG_CURRENT_DESKTOP` and falls back to the
 // plaintext `basic_text` store for every desktop it does not recognise (Hyprland, sway, i3, river…).
-// Folia's KuGou and QQ repositories refuse `basic_text` on purpose, so those users silently lose
-// their logins on every restart even though a Secret Service is running. Selecting the libsecret
+// Folia's QQ repository refuses `basic_text` on purpose, so those users silently lose
+// their login on every restart even though a Secret Service is running. Selecting the libsecret
 // backend explicitly restores persistence; when no Secret Service answers, Chromium reports the
-// encryption as unavailable and the repositories degrade exactly as they do today.
+// encryption as unavailable and the repository degrades exactly as it does today.
 
 // KDE ships its own kwallet backend, and forcing libsecret there would orphan credentials that were
 // already written to the wallet, so KDE sessions keep Chromium's own detection.

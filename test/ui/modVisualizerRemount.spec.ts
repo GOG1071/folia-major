@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { APP_VERSION, GUIDE_VERSION_STORAGE_KEY, waitForAppMounted } from '../helpers/appState';
+import { APP_VERSION, GUIDE_VERSION_STORAGE_KEY, waitForAppMounted, withQqSourceRef } from '../helpers/appState';
 
 // test/ui/modVisualizerRemount.spec.ts
 // A mod visualizer mounts once per song, not once per host re-render. For a song without lyrics the
@@ -7,7 +7,7 @@ import { APP_VERSION, GUIDE_VERSION_STORAGE_KEY, waitForAppMounted } from '../he
 // player chrome rebuilt the Folium stage context and remounted the mod (visible as 52Hz restarting).
 // The mod here only counts its mounts; it is registered through the real client API.
 
-const SONG = { id: 1, name: 'Instrumental', artists: [{ id: 10, name: 'Alpha' }], album: { id: 20, name: 'Album' }, durationMs: 180_000 };
+const SONG = withQqSourceRef({ id: 1, name: 'Instrumental', artists: [{ id: 10, name: 'Alpha' }], album: { id: 20, name: 'Album' }, durationMs: 180_000 });
 
 test('does not remount a mod visualizer when the player UI changes on a lyric-less song', async ({ page }) => {
     await page.addInitScript(([version, guideKey]) => {
@@ -18,7 +18,7 @@ test('does not remount a mod visualizer when the player UI changes on a lyric-le
         localStorage.setItem(guideKey, version);
     }, [APP_VERSION, GUIDE_VERSION_STORAGE_KEY] as const);
     // Every lyric request comes back empty: the song has no lyrics.
-    await page.route('**/__mock_netease__/**', route => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
+    await page.route('**/__mock_qq__/**', route => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
 
     await page.goto('/');
     await waitForAppMounted(page);

@@ -15,7 +15,7 @@ import { buildLocalLibraryIndex, followEntityRedirect } from '../../../utils/loc
 import { getLocalCoverAssetUrl } from '../../../services/localCoverAssetUrl';
 
 // src/components/app/home/gridViewCollectionAdapters.ts
-// Converts home-surface collections into small GridView descriptors and resolves non-Netease tracks outside GridView.
+// Converts home-surface collections into small GridView descriptors and resolves online, local and Navidrome tracks outside GridView.
 
 export type GridViewCollectionSource = 'online' | 'local' | 'navidrome';
 export type NavidromeGridViewCollectionType = 'album' | 'playlist' | 'artist' | 'random' | 'favorites';
@@ -106,12 +106,6 @@ export const getProviderCollectionArtistLabel = (
         .join(', ');
     return artists || collection?.creator?.nickname || '';
 };
-
-export const createNeteaseProviderUser = (user: ProviderUser | null | undefined): ProviderUser | null => user || null;
-
-export const createNeteaseGridViewCollection = (collection: ProviderCollection): GridViewCollectionDescriptor => (
-    createOnlineGridViewCollection(collection, 'netease')
-);
 
 export const createOnlineGridViewCollection = (
     collection: any,
@@ -349,6 +343,3 @@ export const isNavidromeGridViewCollection = (
     collection: GridViewCollectionDescriptor
 ): collection is NavidromeGridViewCollectionDescriptor => collection.source === 'navidrome';
 
-export const isNeteaseGridViewCollection = (
-    collection: GridViewCollectionDescriptor
-) => collection.source === 'online' && collection.providerId === 'netease';

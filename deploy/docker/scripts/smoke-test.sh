@@ -40,8 +40,6 @@ curl --fail --silent --show-error "http://127.0.0.1:$FOLIA_HTTP_PORT/api/healthz
 curl --fail --silent --show-error "http://127.0.0.1:$FOLIA_SYNC_PORT/health" >/dev/null
 curl --fail --silent --show-error "http://127.0.0.1:$FOLIA_HTTP_PORT/" | grep -q '<div id="root"></div>'
 curl --fail --silent --show-error "http://127.0.0.1:$FOLIA_HTTP_PORT/runtime-config.js" | grep -q 'aiProvider:"gemini"'
-curl --fail --silent --show-error "http://127.0.0.1:$FOLIA_HTTP_PORT/netease/" >/dev/null
-curl --fail --silent --show-error "http://127.0.0.1:$FOLIA_HTTP_PORT/kugou/" >/dev/null
 # QQ 用 /login/status 而不是 /：它只读进程内会话状态，不会建立 QR session 或注册装置。
 curl --fail --silent --show-error "http://127.0.0.1:$FOLIA_HTTP_PORT/qq/login/status" >/dev/null
 
@@ -55,7 +53,7 @@ if ! printf '%s' "$segment_body" | grep -q 'GEMINI_API_KEY is not configured'; t
   exit 1
 fi
 
-for service in backend netease-api kugou-api qq-api; do
+for service in backend qq-api; do
   container_id="$(compose ps -q "$service")"
   bindings="$(docker inspect "$container_id" --format '{{json .HostConfig.PortBindings}}')"
   if [ "$bindings" != "{}" ] && [ "$bindings" != "null" ]; then

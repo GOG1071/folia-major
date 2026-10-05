@@ -58,8 +58,8 @@ describe('omni routing', () => {
     it('falls back from a persisted provider missing in the current build', () => {
         useOnlineProviderAccountStore.getState().setActiveProviderId('bodian');
 
-        expect(omni.getActiveProviderSummary()?.providerId).toBe('netease');
-        expect(omni.getActiveCapabilities()).toEqual(omni.getProviderCapabilities('netease'));
+        expect(omni.getActiveProviderSummary()?.providerId).toBe('qq');
+        expect(omni.getActiveCapabilities()).toEqual(omni.getProviderCapabilities('qq'));
         expect(useOnlineProviderAccountStore.getState().activeProviderId).toBe('bodian');
     });
 
@@ -68,7 +68,7 @@ describe('omni routing', () => {
         const summaries = omni.getProviderSummaries();
 
         expect(summaries.find(summary => summary.providerId === providerId)?.requiresAccount).toBe(false);
-        expect(summaries.find(summary => summary.providerId === 'netease')?.requiresAccount).toBe(true);
+        expect(summaries.find(summary => summary.providerId === 'qq')?.requiresAccount).toBe(true);
     });
 
     it('reports songs from unavailable providers as unplayable without routing them elsewhere', () => {
@@ -333,37 +333,6 @@ describe('omni routing', () => {
         })).rejects.toMatchObject({ code: 'unsupported' });
         expect(updateTracks).not.toHaveBeenCalled();
     });
-
-    it('routes a listening report to the provider that owns the song', async () => {
-        const reportPlayback = vi.fn(async () => undefined);
-        registerOnlineMusicProvider({
-            ...provider(providerId, { searchSongs: async () => ({ items: [], hasMore: false, nextOffset: 0 }) }),
-            capabilities: { ...capabilities, playbackReports: true },
-            playbackReports: { reportPlayback },
-        });
-        registerOnlineMusicProvider(provider(otherProviderId, { searchSongs: async () => ({ items: [], hasMore: false, nextOffset: 0 }) }));
-        useOnlineProviderAccountStore.getState().setActiveProviderId(otherProviderId);
-
-        const target = song(providerId, '5');
-        expect(omni.canReportPlayback(target)).toBe(true);
-        await omni.reportPlayback(target, { playedSeconds: 45, totalSeconds: 240 });
-
-        expect(reportPlayback).toHaveBeenCalledWith(target, { playedSeconds: 45, totalSeconds: 240 });
-    });
-
-    it('refuses a listening report for a provider that does not declare the capability', async () => {
-        registerOnlineMusicProvider(provider(providerId, { searchSongs: async () => ({ items: [], hasMore: false, nextOffset: 0 }) }));
-
-        const target = song(providerId, '5');
-        expect(omni.canReportPlayback(target)).toBe(false);
-        await expect(omni.reportPlayback(target, { playedSeconds: 45 })).rejects.toMatchObject({ code: 'unsupported' });
-    });
-
-    it('answers false rather than throwing for a song no online provider owns', () => {
-        const localSong = { ...song(providerId), sourceRef: { kind: 'local', mediaId: 'local-1' } } as UnifiedSong;
-
-        expect(omni.canReportPlayback(localSong)).toBe(false);
-    });
 });
 
 describe('omni like mutations', () => {
@@ -375,7 +344,7 @@ describe('omni like mutations', () => {
 
     afterEach(() => useOnlineProviderAccountStore.getState().clearAccount(providerId));
 
-    const seedAccount = (state: { likedSongIds: string[]; likedSongFileIds: Record<string, string | number> }) => {
+    const seedAccount = (state: { likedSongIds: string[] }) => {
         useOnlineProviderAccountStore.getState().updateAccount(providerId, {
             status: 'authenticated',
             user: { id: 'user', nickname: 'Listener' },
@@ -385,41 +354,39 @@ describe('omni like mutations', () => {
 
     it('keeps likedSongIds in sync when likeSong is called directly', async () => {
         registerOnlineMusicProvider(likeProvider(async () => undefined));
-        seedAccount({ likedSongIds: ['7'], likedSongFileIds: { '7': 987 } });
+        seedAccount({ likedSongIds: ['7'] });
 
         await omni.likeSong(song(providerId, '7'), false);
 
         const account = useOnlineProviderAccountStore.getState().accounts[providerId];
         expect(account.likedSongIds).toEqual([]);
-        expect(account.likedSongFileIds).toEqual({});
     });
 
-    it('hands the cached playlist-local file id to the provider', async () => {
+    it('calls the provider with only the song and the new liked state', async () => {
         const likeSong = vi.fn(async () => undefined);
         registerOnlineMusicProvider(likeProvider(likeSong));
-        seedAccount({ likedSongIds: ['7'], likedSongFileIds: { '7': 987 } });
+        seedAccount({ likedSongIds: ['7'] });
 
         const target = song(providerId, '7');
         await omni.likeSong(target, false);
 
-        expect(likeSong).toHaveBeenCalledWith(target, false, { likedFileId: 987 });
+        expect(likeSong).toHaveBeenCalledWith(target, false);
     });
 
-    it('leaves the liked state untouched and drops the stale file id when the mutation fails', async () => {
+    it('leaves the liked state untouched when the mutation fails', async () => {
         registerOnlineMusicProvider(likeProvider(async () => { throw new Error('network'); }));
-        seedAccount({ likedSongIds: ['7'], likedSongFileIds: { '7': 987 } });
+        seedAccount({ likedSongIds: ['7'] });
 
         await expect(omni.likeSong(song(providerId, '7'), false)).rejects.toThrow('network');
 
         const account = useOnlineProviderAccountStore.getState().accounts[providerId];
         expect(account.likedSongIds).toEqual(['7']);
-        expect(account.likedSongFileIds).toEqual({});
     });
 
     it('persists the new liked list so a restart does not restore the old heart', async () => {
         vi.mocked(saveProviderAccountSnapshot).mockClear();
         registerOnlineMusicProvider(likeProvider(async () => undefined));
-        seedAccount({ likedSongIds: ['7'], likedSongFileIds: { '7': 987 } });
+        seedAccount({ likedSongIds: ['7'] });
 
         await omni.likeSong(song(providerId, '7'), false);
 
@@ -431,21 +398,20 @@ describe('omni like mutations', () => {
     it('keeps the mutation successful when persisting the snapshot fails', async () => {
         vi.mocked(saveProviderAccountSnapshot).mockRejectedValueOnce(new Error('disk full'));
         registerOnlineMusicProvider(likeProvider(async () => undefined));
-        seedAccount({ likedSongIds: [], likedSongFileIds: {} });
+        seedAccount({ likedSongIds: [] });
 
         await expect(omni.likeSong(song(providerId, '7'), true)).resolves.toBeUndefined();
         expect(useOnlineProviderAccountStore.getState().accounts[providerId].likedSongIds.map(String)).toEqual(['7']);
     });
 
-    it('adds the song to likedSongIds without inventing a file id', async () => {
+    it('adds the song to likedSongIds', async () => {
         registerOnlineMusicProvider(likeProvider(async () => undefined));
-        seedAccount({ likedSongIds: [], likedSongFileIds: {} });
+        seedAccount({ likedSongIds: [] });
 
         const nextLiked = await omni.toggleSongLike(song(providerId, '7'));
 
         const account = useOnlineProviderAccountStore.getState().accounts[providerId];
         expect(nextLiked).toBe(true);
         expect(account.likedSongIds.map(String)).toEqual(['7']);
-        expect(account.likedSongFileIds).toEqual({});
     });
 });

@@ -14,5 +14,4 @@ ENV NODE_ENV=production
 USER node
 EXPOSE 3000
 
-# netease / kugou 的镜像还会跑 patch-music-api-client-ip.mjs；QQ 后端不转发浏览器 IP，不需要这一步。
 CMD ["node", "node_modules/@yakult-green-tea/qq-music-api/dist/src/app.js"]

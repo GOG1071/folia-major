@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildKugouLyricSearchQuery, buildLyricSearchQuery, normalizeSongTitleForLyricSearch } from '@/utils/lyrics/searchQuery';
+import { buildLyricSearchQuery, normalizeSongTitleForLyricSearch } from '@/utils/lyrics/searchQuery';
 
 // test/unit/lyrics/searchQuery.test.ts
 // Covers lyric search query construction edge cases.
@@ -30,17 +30,5 @@ describe('buildLyricSearchQuery', () => {
 
     it('does not remove a title prefix that is not the supplied artist', () => {
         expect(normalizeSongTitleForLyricSearch('Part I - Nod-Krai', 'HOYO-MiX')).toBe('Part I - Nod-Krai');
-    });
-});
-
-describe('buildKugouLyricSearchQuery', () => {
-    it('uses only the title segment from structured metadata queries', () => {
-        expect(buildKugouLyricSearchQuery(
-            'SAKURAスキップ - 高田憂希/山口愛/戸田めぐみ/竹尾歩美 - TVアニメ「NEW GAME!」オープニングテーマ「SAKURAステップ」'
-        )).toBe('SAKURAスキップ');
-    });
-
-    it('keeps unstructured manual keywords unchanged', () => {
-        expect(buildKugouLyricSearchQuery('SAKURAスキップ fourfolium')).toBe('SAKURAスキップ fourfolium');
     });
 });

@@ -54,7 +54,7 @@ const openApp = async (page: import('@playwright/test').Page, view: 'player' | '
         // Armed from the first script so the mount itself is counted; see the wait after goto.
         (window as unknown as { __renderCounts: Counts }).__renderCounts = {};
     }, [APP_VERSION, GUIDE_VERSION_STORAGE_KEY, view]);
-    await page.route('**/__mock_netease__/**', async (route) => {
+    await page.route('**/__mock_qq__/**', async (route) => {
         await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
     });
     // Deliberately no seeded track. A loaded queue drags in audio-source resolution, lyric
@@ -220,7 +220,7 @@ const openWall = async (page: import('@playwright/test').Page) => {
         localStorage.setItem('static_mode', 'true');
         localStorage.setItem(guideKey, version);
     }, [APP_VERSION, GUIDE_VERSION_STORAGE_KEY]);
-    await page.route('**/__mock_netease__/**', route => (
+    await page.route('**/__mock_qq__/**', route => (
         route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
     ));
     await page.goto('/');
@@ -233,7 +233,7 @@ const openWall = async (page: import('@playwright/test').Page) => {
         const queue = Array.from({ length: 40 }, (_, index) => ({
             id: String(index), name: `Song ${index}`, artists: [{ id: 1, name: 'Artist' }],
             album: { id: 1, name: 'Album' }, durationMs: 180_000,
-            sourceRef: { kind: 'online', providerId: 'netease', mediaId: String(index) },
+            sourceRef: { kind: 'online', providerId: 'qq', mediaId: String(index) },
         }));
         playback.usePlaybackStore.setState({ playQueue: queue, currentSong: queue[0] });
         views.useAppViewStore.setState({ view: 'lattice' });

@@ -21,10 +21,6 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-      netease-api:
-        condition: service_healthy
-      kugou-api:
-        condition: service_healthy
       qq-api:
         condition: service_healthy
     networks:
@@ -56,55 +52,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    networks:
-      - folia-internal
-      - folia-egress
-    security_opt:
-      - no-new-privileges:true
-
-  netease-api:
-    image: ${FOLIA_IMAGE_NAMESPACE:?Set FOLIA_IMAGE_NAMESPACE}/folia-netease-api:${FOLIA_STACK_VERSION:-latest}
-    restart: unless-stopped
-    read_only: true
-    environment:
-      HOST: 0.0.0.0
-      PORT: "3000"
-      FOLIA_FORWARD_CLIENT_IP: ${FOLIA_FORWARD_CLIENT_IP:-false}
-      ENABLE_GENERAL_UNBLOCK: ${ENABLE_GENERAL_UNBLOCK:-false}
-    expose:
-      - "3000"
-    tmpfs:
-      - /tmp
-    healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
-      interval: 20s
-      timeout: 5s
-      retries: 15
-      start_period: 30s
-    networks:
-      - folia-internal
-      - folia-egress
-    security_opt:
-      - no-new-privileges:true
-
-  kugou-api:
-    image: ${FOLIA_IMAGE_NAMESPACE:?Set FOLIA_IMAGE_NAMESPACE}/folia-kugou-api:${FOLIA_STACK_VERSION:-latest}
-    restart: unless-stopped
-    read_only: true
-    environment:
-      HOST: 0.0.0.0
-      PORT: "3000"
-      FOLIA_FORWARD_CLIENT_IP: ${FOLIA_FORWARD_CLIENT_IP:-false}
-    expose:
-      - "3000"
-    tmpfs:
-      - /tmp
-    healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
-      interval: 20s
-      timeout: 5s
-      retries: 15
-      start_period: 20s
     networks:
       - folia-internal
       - folia-egress

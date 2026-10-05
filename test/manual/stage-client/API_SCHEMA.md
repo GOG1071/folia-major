@@ -99,7 +99,6 @@ type StageLyricSource =
   | StageLocalLyricSource
   | StageEmbeddedLyricSource
   | StageNavidromeLyricSource
-  | StageNeteaseLyricSource
   | StageQrcLyricSource;
 
 interface StageLocalLyricSource {
@@ -133,23 +132,6 @@ interface StageNavidromeStructuredLyricLine {
   value?: string;
 }
 
-interface StageNeteaseLyricSource {
-  type: 'netease';
-  lrc?: StageNeteaseLyricBranch & {
-    yrc?: StageNeteaseLyricBranch;
-    ytlrc?: StageNeteaseLyricBranch;
-  };
-  yrc?: StageNeteaseLyricBranch;
-  ytlrc?: StageNeteaseLyricBranch;
-  tlyric?: StageNeteaseLyricBranch;
-  pureMusic?: boolean;
-}
-
-interface StageNeteaseLyricBranch {
-  lyric?: string;
-  pureMusic?: boolean;
-}
-
 interface StageQrcLyricSource {
   type: 'qrc';
   qrcContent: string;
@@ -162,10 +144,9 @@ interface StageQrcLyricSource {
 | `local` | `lrcContent: string` | 本地 LRC / enhanced LRC / VTT / YRC / QRC 文本。 |
 | `embedded` | `textContent`、`translationContent`、`usltTags` 至少一个有内容 | 音频标签中提取的歌词形态。 |
 | `navidrome` | `plainLyrics` 或 `structuredLyrics` 至少一个有内容 | Navidrome 歌词形态。 |
-| `netease` | 任一歌词分支或 `pureMusic` | 网易云歌词响应形态。 |
 | `qrc` | `qrcContent: string` | QRC 歌词文本。 |
 
-> 目前联调页的输入校验只开放 `embedded`、`local`、`navidrome`、`netease`，服务端 schema 还支持 `qrc`。
+> 目前联调页的输入校验只开放 `embedded`、`local`、`navidrome`，服务端 schema 还支持 `qrc`。
 
 ### StageMediaSession
 
@@ -465,115 +446,6 @@ interface StageSessionMultipartFiles {
 | `413` | `STAGE_FILE_TOO_LARGE` | multipart 文件超过 1 GiB。 |
 | `422` | `AUDIO_METADATA_PARSE_FAILED` | 上传音频 metadata 解析失败。 |
 | `500` | `SESSION_COMMIT_FAILED` | multipart 文件写入或提交失败。 |
-
-## `POST /stage/player/search`
-
-把搜索请求转交给 Folia 当前接入的搜索通道，返回可供点播接口消费的候选结果。
-
-### 请求
-
-```ts
-interface StagePlayerSearchRequest {
-  query: string;
-  limit?: number;
-}
-```
-
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `query` | `string` | 是 | 搜索关键词。空字符串不合法。 |
-| `limit` | `number` | 否 | 返回数量。服务端会归一化到 `1..50`，默认 `10`。 |
-
-### 响应 `200`
-
-```ts
-interface StageSearchResult {
-  songId: number;
-  title: string;
-  artists: string[];
-  album: string;
-  durationMs: number | null;
-  coverUrl: string | null;
-}
-
-interface StagePlayerSearchResponse extends StagePlayerOutsideInMetadata {
-  query: string;
-  songs: StageSearchResult[];
-}
-```
-
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `query` | `string` | 标准化后的搜索关键词。 |
-| `songs` | `StageSearchResult[]` | 搜索结果列表。 |
-| `songs[].songId` | `number` | 歌曲 ID，后续传给 `/stage/player/play` 或队列追加接口。 |
-| `songs[].title` | `string` | 歌名。 |
-| `songs[].artists` | `string[]` | 艺术家列表。 |
-| `songs[].album` | `string` | 专辑。 |
-| `songs[].durationMs` | `number \| null` | 时长。 |
-| `songs[].coverUrl` | `string \| null` | 封面 URL。 |
-
-### 主要错误
-
-| HTTP | `code` | 条件 |
-| --- | --- | --- |
-| `400` | `INVALID_STAGE_PLAYER_SEARCH_JSON` | JSON 无法解析。 |
-| `400` | `INVALID_STAGE_PLAYER_SEARCH_QUERY` | `query` 为空。 |
-| `503` | `NETEASE_API_UNAVAILABLE` | 默认网易云本地 API 不可用。 |
-| `502` | `NETEASE_SEARCH_FAILED` | 默认网易云搜索请求失败。 |
-
-## `POST /stage/player/play`
-
-请求 Folia 主播放器播放或追加一首歌。
-
-### 请求
-
-```ts
-interface StagePlayerPlayRequest {
-  songId: number;
-  appendToQueue?: boolean;
-}
-```
-
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `songId` | `number` | 是 | 正整数歌曲 ID，通常来自搜索结果。 |
-| `appendToQueue` | `boolean` | 否 | `true` 时追加到主播放器队列，不打断当前播放；默认 `false`。 |
-
-### 响应 `200`
-
-```ts
-interface StagePlayerPlayResponse extends StagePlayerOutsideInMetadata {
-  ok: true;
-  songId: number;
-  appendToQueue: boolean;
-  changed?: boolean;
-  deduplicated?: boolean;
-  affectedCount?: number;
-  diff?: StagePlayerQueueDiff;
-}
-```
-
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `ok` | `true` | 请求已被播放器接受。 |
-| `songId` | `number` | 本次请求的歌曲 ID。 |
-| `appendToQueue` | `boolean` | 是否为队列追加模式。 |
-| `changed` | `boolean` 可选 | 队列追加时，队列是否发生变化。 |
-| `deduplicated` | `boolean` 可选 | 队列追加时，是否发生同源歌曲去重或移动。 |
-| `affectedCount` | `number` 可选 | 队列追加时，实际影响的歌曲数量。 |
-| `diff` | `StagePlayerQueueDiff` 可选 | 队列追加时的队列差异。若 `requiresReload: true`，客户端应重新调用 `GET /stage/player/queue` 校准本地队列。 |
-
-### 主要错误
-
-| HTTP | `code` | 条件 |
-| --- | --- | --- |
-| `400` | `INVALID_STAGE_PLAYER_PLAY_JSON` | JSON 无法解析。 |
-| `400` | `INVALID_STAGE_PLAYER_PLAY_SONG_ID` | `songId` 不是正整数。 |
-| `503` | `STAGE_PLAY_UNAVAILABLE` | Folia 主窗口不可用。 |
-| `503` | `STAGE_PLAY_CANCELED` | 请求被取消，例如 Stage 状态被清空。 |
-| `504` | `STAGE_PLAY_TIMEOUT` | 播放器 15 秒内未完成响应。 |
-| `502` | `STAGE_PLAY_REJECTED` | 渲染进程拒绝播放请求。 |
 
 ## `GET /stage/player/status`
 
@@ -877,12 +749,3 @@ interface StagePlayerWebSocketQueueUpdatedMessage
 - `activeEntryKind` 为 `null`
 - `lyricsSession` 为 `null`
 - `mediaSession` 为 `null`
-
-## 兼容旧接口
-
-以下旧接口仍可用，但响应会额外标记 `deprecated: true` 和 `replacement`。
-
-| 旧接口 | 替代接口 | 响应差异 |
-| --- | --- | --- |
-| `POST /stage/search` | `POST /stage/player/search` | `StagePlayerSearchResponse & { deprecated: true; replacement: '/stage/player/search' }` |
-| `POST /stage/play` | `POST /stage/player/play` | `StagePlayerPlayResponse & { deprecated: true; replacement: '/stage/player/play' }` |

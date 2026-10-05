@@ -20,10 +20,7 @@ import type { ExportableLyric, LyricCollectionResult, SkippedLyric } from './typ
 
 const LYRIC_PREFIX = 'lyric_';
 const STATE_SUFFIX = '_state';
-const ONLINE_PREFIX = 'online:';
 const ONLINE_KEY_REGEX = /^online:([^:]+):(.+)$/;
-// NetEase keys from before the provider-prefixed scheme (see getLegacySongResourceCacheKeys).
-const LEGACY_NETEASE_KEY_REGEX = /^(?:cloud_)?(\d+)$/;
 
 interface CacheGroup {
     songKey: string;
@@ -40,10 +37,7 @@ export const parseOnlineLyricCacheKey = (body: string): Pick<CacheGroup, 'songKe
     if (online) {
         return { songKey: body, providerId: online[1], mediaId: online[2] };
     }
-    const legacy = body.match(LEGACY_NETEASE_KEY_REGEX);
-    if (legacy) {
-        return { songKey: `online:netease:${legacy[1]}`, providerId: 'netease', mediaId: legacy[1] };
-    }
+    // Keys from before the provider-prefixed scheme (bare numeric NetEase ids) are not owned by this exporter.
     return null;
 };
 
@@ -60,12 +54,6 @@ export const collectOnlineLyrics = async (): Promise<LyricCollectionResult> => {
         const suffix = [STATE_SUFFIX, LYRIC_CACHE_META_SUFFIX].find(candidate => rawBody.endsWith(candidate));
         const identity = parseOnlineLyricCacheKey(suffix ? rawBody.slice(0, -suffix.length) : rawBody);
         if (!identity) continue;
-        const isCurrentKey = rawBody.startsWith(ONLINE_PREFIX);
-
-        // Playback only ever reads state from the provider-prefixed key (loadOnlineLyricsState
-        // never looks at legacy keys), so a legacy `_state` left over from before the migration
-        // must not decide anything here either. Legacy keys only lend lyrics.
-        if (suffix && !isCurrentKey) continue;
 
         const group = groups.get(identity.songKey) ?? { ...identity };
         if (suffix === STATE_SUFFIX) {
@@ -73,11 +61,7 @@ export const collectOnlineLyrics = async (): Promise<LyricCollectionResult> => {
         } else if (suffix === LYRIC_CACHE_META_SUFFIX) {
             if (entry.data && typeof entry.data === 'object') group.meta = entry.data as LyricCacheSongMetadata;
         } else if (isLyricData(entry.data)) {
-            // A provider-prefixed entry wins over a legacy one for the same song: it is what
-            // playback migrated to and kept writing.
-            if (!group.lyrics || isCurrentKey) {
-                group.lyrics = migrateLyricDataRenderHints(entry.data).value;
-            }
+            group.lyrics = migrateLyricDataRenderHints(entry.data).value;
         }
         groups.set(identity.songKey, group);
     }

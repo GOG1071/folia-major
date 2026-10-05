@@ -16,7 +16,7 @@ export interface LyricExportProviderRef {
 
 /** One song's lyrics, ready to be adjusted and written. */
 export interface ExportableLyric {
-    /** `getPlaybackSongKey` form, e.g. `online:netease:123` or `local:abc`. */
+    /** `getPlaybackSongKey` form, e.g. `online:qq:123` or `local:abc`. */
     songKey: string;
     lyrics: LyricData;
     source: FoliaLyricDocumentSource;

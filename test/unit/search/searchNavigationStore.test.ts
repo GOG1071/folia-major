@@ -1,13 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveCommandPaletteSearchSource, useSearchNavigationStore } from '@/stores/useSearchNavigationStore';
-import { neteaseApi } from '@/services/netease';
+import { omni } from '@/services/onlineMusic/omni';
 import { getNavidromeConfig, navidromeApi } from '@/services/navidromeService';
 import type { LocalLibraryAssignment, LocalLibraryEntity } from '@/types/localLibrary';
 
-vi.mock('@/services/netease', () => ({
-    neteaseApi: {
-        cloudSearch: vi.fn(),
-        normalizeSongResult: vi.fn((raw: unknown) => raw),
+vi.mock('@/services/onlineMusic/omni', () => ({
+    omni: {
+        searchProviderSongs: vi.fn(),
     },
 }));
 
@@ -19,8 +18,15 @@ vi.mock('@/services/navidromeService', () => ({
     },
 }));
 
+const song = (id: number, name: string) => (
+    { id, name, artists: [], album: { id, name: 'Album' }, durationMs: 1000 }
+);
+const page = (items: ReturnType<typeof song>[], hasMore: boolean, nextOffset: number) => (
+    { items, hasMore, nextOffset } as any
+);
+
 describe('useSearchNavigationStore', () => {
-    const cloudSearchMock = vi.mocked(neteaseApi.cloudSearch);
+    const searchProviderSongsMock = vi.mocked(omni.searchProviderSongs);
     const getNavidromeConfigMock = vi.mocked(getNavidromeConfig);
     const navidromeSearchMock = vi.mocked(navidromeApi.search);
     const toNavidromeSongMock = vi.mocked(navidromeApi.toNavidromeSong);
@@ -30,7 +36,7 @@ describe('useSearchNavigationStore', () => {
     };
 
     beforeEach(() => {
-        cloudSearchMock.mockReset();
+        searchProviderSongsMock.mockReset();
         getNavidromeConfigMock.mockReset();
         getNavidromeConfigMock.mockReturnValue(null);
         navidromeSearchMock.mockReset();
@@ -38,7 +44,7 @@ describe('useSearchNavigationStore', () => {
         useSearchNavigationStore.setState({
             homeViewTab: 'playlist',
             searchQuery: '',
-            searchSourceTab: 'netease',
+            searchSourceTab: 'qq',
             searchResults: null,
             searchReturnView: 'home',
             isSearchOpen: false,
@@ -57,12 +63,12 @@ describe('useSearchNavigationStore', () => {
     it('uses the active online provider for command palette searches', () => {
         expect(resolveCommandPaletteSearchSource({
             id: 1,
-            name: 'NetEase track still playing',
+            name: 'Online track still playing',
             artists: [],
             album: { id: 1, name: '' },
             durationMs: 1,
-        }, 'netease', 'kugou')).toBe('kugou');
-        expect(resolveCommandPaletteSearchSource(null, 'netease', 'kugou')).toBe('kugou');
+        }, 'qq', 'folium.mod-a.source')).toBe('folium.mod-a.source');
+        expect(resolveCommandPaletteSearchSource(null, 'qq', 'folium.mod-a.source')).toBe('folium.mod-a.source');
     });
 
     it('submits a local search and opens the overlay', async () => {
@@ -98,30 +104,14 @@ describe('useSearchNavigationStore', () => {
         expect(state.hasMore).toBe(false);
     });
 
-    it('appends more netease results when loading the next page', async () => {
-        cloudSearchMock
-            .mockResolvedValueOnce({
-                result: {
-                    songs: [
-                        { id: 1, name: 'Track 1', artists: [], album: { id: 1, name: 'Album 1' }, durationMs: 1000 },
-                        { id: 2, name: 'Track 2', artists: [], album: { id: 2, name: 'Album 2' }, durationMs: 1000 },
-                    ],
-                    songCount: 4,
-                },
-            } as any)
-            .mockResolvedValueOnce({
-                result: {
-                    songs: [
-                        { id: 3, name: 'Track 3', artists: [], album: { id: 3, name: 'Album 3' }, durationMs: 1000 },
-                        { id: 4, name: 'Track 4', artists: [], album: { id: 4, name: 'Album 4' }, durationMs: 1000 },
-                    ],
-                    songCount: 4,
-                },
-            } as any);
+    it('appends more online results when loading the next page', async () => {
+        searchProviderSongsMock
+            .mockResolvedValueOnce(page([song(1, 'Track 1'), song(2, 'Track 2')], true, 2))
+            .mockResolvedValueOnce(page([song(3, 'Track 3'), song(4, 'Track 4')], false, 4));
 
         await useSearchNavigationStore.getState().submitSearch({
             query: 'folio',
-            sourceTab: 'netease',
+            sourceTab: 'qq',
             deps,
         });
 
@@ -129,23 +119,18 @@ describe('useSearchNavigationStore', () => {
 
         const state = useSearchNavigationStore.getState();
 
-        expect(cloudSearchMock).toHaveBeenNthCalledWith(1, 'folio', 30, 0);
-        expect(cloudSearchMock).toHaveBeenNthCalledWith(2, 'folio', 30, 2);
+        expect(searchProviderSongsMock).toHaveBeenNthCalledWith(1, 'qq', 'folio', { limit: 30, offset: 0 });
+        expect(searchProviderSongsMock).toHaveBeenNthCalledWith(2, 'qq', 'folio', { limit: 30, offset: 2 });
         expect(state.searchResults).toHaveLength(4);
         expect(state.hasMore).toBe(false);
         expect(state.offset).toBe(4);
     });
 
     it('restores the matching cached search results and scroll position', async () => {
-        cloudSearchMock.mockResolvedValueOnce({
-            result: {
-                songs: [{ id: 9, name: 'Cached', artists: [], album: { id: 1, name: 'Album' }, durationMs: 1000 }],
-                songCount: 1,
-            },
-        } as any);
+        searchProviderSongsMock.mockResolvedValueOnce(page([song(9, 'Cached')], false, 1));
         await useSearchNavigationStore.getState().submitSearch({
             query: 'cached',
-            sourceTab: 'netease',
+            sourceTab: 'qq',
             deps,
         });
         useSearchNavigationStore.getState().setSearchScrollTop(240);
@@ -153,7 +138,7 @@ describe('useSearchNavigationStore', () => {
 
         useSearchNavigationStore.getState().restoreSearch({
             query: 'cached',
-            sourceTab: 'netease',
+            sourceTab: 'qq',
         });
 
         const state = useSearchNavigationStore.getState();
@@ -164,21 +149,16 @@ describe('useSearchNavigationStore', () => {
     });
 
     it('does not reuse cached results from a different query', async () => {
-        cloudSearchMock.mockResolvedValueOnce({
-            result: {
-                songs: [{ id: 9, name: 'Cached', artists: [], album: { id: 1, name: 'Album' }, durationMs: 1000 }],
-                songCount: 1,
-            },
-        } as any);
+        searchProviderSongsMock.mockResolvedValueOnce(page([song(9, 'Cached')], false, 1));
         await useSearchNavigationStore.getState().submitSearch({
             query: 'cached',
-            sourceTab: 'netease',
+            sourceTab: 'qq',
             deps,
         });
 
         useSearchNavigationStore.getState().restoreSearch({
             query: 'different',
-            sourceTab: 'netease',
+            sourceTab: 'qq',
         });
 
         expect(useSearchNavigationStore.getState().searchResults).toBeNull();
@@ -269,33 +249,23 @@ describe('useSearchNavigationStore', () => {
 
     it('keeps the newest result when an older request resolves later', async () => {
         let resolveFirst: ((value: any) => void) | undefined;
-        cloudSearchMock
+        searchProviderSongsMock
             .mockImplementationOnce(() => new Promise(resolve => {
                 resolveFirst = resolve;
             }))
-            .mockResolvedValueOnce({
-                result: {
-                    songs: [{ id: 2, name: 'Newest', artists: [], album: { id: 2, name: 'Album' }, durationMs: 1000 }],
-                    songCount: 1,
-                },
-            } as any);
+            .mockResolvedValueOnce(page([song(2, 'Newest')], false, 1));
 
         const firstRequest = useSearchNavigationStore.getState().submitSearch({
             query: 'old',
-            sourceTab: 'netease',
+            sourceTab: 'qq',
             deps,
         });
         await useSearchNavigationStore.getState().submitSearch({
             query: 'new',
-            sourceTab: 'netease',
+            sourceTab: 'qq',
             deps,
         });
-        resolveFirst?.({
-            result: {
-                songs: [{ id: 1, name: 'Old', artists: [], album: { id: 1, name: 'Album' }, durationMs: 1000 }],
-                songCount: 1,
-            },
-        });
+        resolveFirst?.(page([song(1, 'Old')], false, 1));
         await firstRequest;
 
         expect(useSearchNavigationStore.getState().searchQuery).toBe('new');
@@ -303,11 +273,11 @@ describe('useSearchNavigationStore', () => {
     });
 
     it('exposes a recoverable error state after a failed search', async () => {
-        cloudSearchMock.mockRejectedValueOnce(new Error('network'));
+        searchProviderSongsMock.mockRejectedValueOnce(new Error('network'));
 
         await useSearchNavigationStore.getState().submitSearch({
             query: 'failure',
-            sourceTab: 'netease',
+            sourceTab: 'qq',
             deps,
         });
 
@@ -319,24 +289,14 @@ describe('useSearchNavigationStore', () => {
     });
 
     it('retains paged results and can retry after a load-more error', async () => {
-        cloudSearchMock
-            .mockResolvedValueOnce({
-                result: {
-                    songs: [{ id: 1, name: 'First', artists: [], album: { id: 1, name: 'Album' }, durationMs: 1000 }],
-                    songCount: 2,
-                },
-            } as any)
+        searchProviderSongsMock
+            .mockResolvedValueOnce(page([song(1, 'First')], true, 1))
             .mockRejectedValueOnce(new Error('page failed'))
-            .mockResolvedValueOnce({
-                result: {
-                    songs: [{ id: 2, name: 'Second', artists: [], album: { id: 1, name: 'Album' }, durationMs: 1000 }],
-                    songCount: 2,
-                },
-            } as any);
+            .mockResolvedValueOnce(page([song(2, 'Second')], false, 2));
 
         await useSearchNavigationStore.getState().submitSearch({
             query: 'paged',
-            sourceTab: 'netease',
+            sourceTab: 'qq',
             deps,
         });
         await useSearchNavigationStore.getState().loadMoreSearchResults({ deps });
@@ -356,7 +316,7 @@ describe('useSearchNavigationStore', () => {
 
     it('moves the online source to the active provider without clearing results', () => {
         const results = [{ id: 1, name: 'Kept' }] as any;
-        useSearchNavigationStore.setState({ searchSourceTab: 'netease', searchResults: results, searchQuery: 'q' });
+        useSearchNavigationStore.setState({ searchSourceTab: 'qq', searchResults: results, searchQuery: 'q' });
 
         useSearchNavigationStore.getState().followOnlineProvider('folium.mod-a.source');
 
@@ -369,11 +329,11 @@ describe('useSearchNavigationStore', () => {
 
     it('leaves a local or Navidrome source alone when the active provider changes', () => {
         useSearchNavigationStore.setState({ searchSourceTab: 'local' });
-        useSearchNavigationStore.getState().followOnlineProvider('kugou');
+        useSearchNavigationStore.getState().followOnlineProvider('qq');
         expect(useSearchNavigationStore.getState().searchSourceTab).toBe('local');
 
         useSearchNavigationStore.setState({ searchSourceTab: 'navidrome' });
-        useSearchNavigationStore.getState().followOnlineProvider('kugou');
+        useSearchNavigationStore.getState().followOnlineProvider('qq');
         expect(useSearchNavigationStore.getState().searchSourceTab).toBe('navidrome');
     });
 });

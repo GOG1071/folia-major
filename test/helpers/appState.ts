@@ -32,3 +32,14 @@ export const APP_MOUNT_TIMEOUT_MS = 60_000;
 export const waitForAppMounted = async (page: Page) => {
     await page.locator('#app-splash').waitFor({ state: 'detached', timeout: APP_MOUNT_TIMEOUT_MS });
 };
+
+/**
+ * 把测试夹具里的裸歌曲标成 QQ 在线歌曲。
+ *
+ * 没有 `sourceRef` 的歌曲是 sourceRef 出现之前的遗留记录，当年一律是网易云；该 provider 已移除，
+ * 这类记录现在按「未注册 provider」处理，恢复队列时被丢弃。需要真的出现在队列里的夹具必须自带来源。
+ */
+export const withQqSourceRef = <T extends { id: string | number }>(song: T) => ({
+    ...song,
+    sourceRef: { kind: 'online' as const, providerId: 'qq' as const, mediaId: String(song.id) },
+});

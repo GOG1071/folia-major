@@ -14,7 +14,6 @@ import type { LyricStaffAbsorbMode, LyricStaffPolicy } from '../../utils/lyrics/
 import type { AudioEqualizerModeId } from '../../utils/audioEqualizer';
 import type { ThemeGenerationSource } from '../../services/themePreferences';
 import type { TransitionMode } from '../../services/automix/transitionStrategy';
-import type { PersonalFmSelection } from '../../services/onlineMusic/fmModes';
 import type { QueueBatchAction, QueueFacetKind } from './queueQuery';
 import type { CommandPlatform } from './availability';
 import type { CommandPaletteSurface } from './surfaces/types';
@@ -149,10 +148,6 @@ export type CommandPalettePlaybackContext = {
     setReplayGainMode: (mode: ReplayGainMode) => void;
     /** Personal FM owns the queue while it is on air; queue commands stand down. */
     isFmMode: boolean;
-    personalFmSelection: PersonalFmSelection;
-    /** Only the providers that actually implement FM modes offer the picker. */
-    isPersonalFmModeSupported: boolean;
-    setPersonalFmSelection: (selection: PersonalFmSelection) => Promise<void> | void;
     toggleMute: () => void;
     /**
      * The like/star action from the controls tab. It travels here rather than staying inside the
@@ -253,13 +248,6 @@ export type CommandPaletteSettingsContext = {
      */
     canAutoScanLocalLibrary: () => boolean;
     toggleLocalLibraryAutoScan: () => void;
-    /**
-     * Whether NetEase listening reports can be turned on at all - the provider supports them and the
-     * account is signed in. A getter because signing in and out changes the answer while the palette
-     * is open, and the settings panel gates its toggle on the same predicate.
-     */
-    canReportNeteasePlayback: () => boolean;
-    toggleNeteaseScrobble: () => void;
     voiceInputPauseSupported: boolean;
     /** Lab switch for the experimental mod system; gates the `mods` command. */
     modSystemEnabled: boolean;

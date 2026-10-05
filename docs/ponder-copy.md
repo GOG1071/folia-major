@@ -888,7 +888,7 @@
         "next": "选择后，新歌曲会插到当前歌曲后面。这个设置会影响卡片、队列行和命令窗口里的所有加入队列入口。"
       },
       "lyricsSource": {
-        "autoBest": "自动择优会从网易云、AMLLDB、QQ 和酷狗匹配歌词，并可能覆盖来源页的手动选择。手动选择没有生效时，先检查这里。",
+        "autoBest": "自动择优会从 QQ 音乐匹配歌词（QQ 没有时再找 LRCLIB），并可能覆盖来源页的手动选择。手动选择没有生效时，先检查这里。",
         "priority": "底下两张卡决定本地和在线的歌词谁优先。本地文件自带的歌词和在线检索到的同时存在时，按这里说的来。",
         "globalOffset": "「全局时间轴偏移」点进去是一整屏的标尺，调的是所有歌的歌词整体提前或延后多少 —— 一般用来补声卡或蓝牙的固定延迟。",
         "offsetSum": "来源页偏移只对当前歌曲有效，全局偏移长期生效；两者会相加。"
@@ -1146,7 +1146,7 @@
 | `lyrics-animation-settings` | `lyrics-animation-toggles` | 两个影响观感的开关 | `ponder.captions.lyricsAnimation.card` | 入口下面这一张卡里装着两个开关。它们是同一张卡的上下两行，中间只隔一条分隔线，不是两张并排的卡。 | card：两个开关那张卡 | `ponder.anchors.lyricsAnimation.card` |
 | `lyrics-animation-settings` | `lyrics-animation-toggles` | 两个影响观感的开关 | `ponder.captions.lyricsAnimation.transparent` | 「播放页透明背景」只影响播放页，适合 OBS 或抠像叠加；它和封面右上角按钮是同一个开关。 | transparent：播放页透明背景 | `ponder.anchors.lyricsAnimation.transparent` |
 | `lyrics-animation-settings` | `lyrics-animation-toggles` | 两个影响观感的开关 | `ponder.captions.lyricsAnimation.autoHide` | 下面那行「自动隐藏控制栏」在你不动指针时把播放页的进度条和右侧按钮收起来，只留歌词。需要控制时靠近它们就会回来。 | autoHide：自动隐藏控制栏 | `ponder.anchors.lyricsAnimation.autoHide` |
-| `lyrics-settings` | `lyrics-settings-source` | 歌词从哪来 | `ponder.captions.lyricsSource.autoBest` | 自动择优会从网易云、AMLLDB、QQ 和酷狗匹配歌词，并可能覆盖来源页的手动选择。手动选择没有生效时，先检查这里。 | autoBest：自动择优 | `ponder.anchors.lyricsSource.autoBest` |
+| `lyrics-settings` | `lyrics-settings-source` | 歌词从哪来 | `ponder.captions.lyricsSource.autoBest` | 自动择优会从 QQ 音乐匹配歌词（QQ 没有时再找 LRCLIB），并可能覆盖来源页的手动选择。手动选择没有生效时，先检查这里。 | autoBest：自动择优 | `ponder.anchors.lyricsSource.autoBest` |
 | `lyrics-settings` | `lyrics-settings-source` | 歌词从哪来 | `ponder.captions.lyricsSource.priority` | 底下两张卡决定本地和在线的歌词谁优先。本地文件自带的歌词和在线检索到的同时存在时，按这里说的来。 | priorityLocal：本地优先 | `ponder.anchors.lyricsSource.priorityLocal` |
 | `lyrics-settings` | `lyrics-settings-offset` | 两个同名的偏移量 | `ponder.captions.lyricsSource.globalOffset` | 「全局时间轴偏移」点进去是一整屏的标尺，调的是所有歌的歌词整体提前或延后多少 —— 一般用来补声卡或蓝牙的固定延迟。 | globalOffset：全局时间轴偏移 | `ponder.anchors.lyricsSource.globalOffset` |
 | `lyrics-settings` | `lyrics-settings-offset` | 两个同名的偏移量 | `ponder.captions.lyricsSource.offsetSum` | 来源页偏移只对当前歌曲有效，全局偏移长期生效；两者会相加。 | globalOffset：全局时间轴偏移 | `ponder.anchors.lyricsSource.globalOffset` |

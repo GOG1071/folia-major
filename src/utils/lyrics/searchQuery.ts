@@ -59,13 +59,3 @@ export const buildLyricSearchQuery = (
         .filter((part): part is string => Boolean(part))
         .join(' - ');
 };
-
-export const buildKugouLyricSearchQuery = (keyword: string): string => {
-    const trimmedKeyword = keyword.trim();
-    if (!trimmedKeyword) {
-        return trimmedKeyword;
-    }
-
-    const structuredTitle = trimmedKeyword.split(/\s+-\s+/u)[0]?.trim();
-    return structuredTitle || trimmedKeyword;
-};

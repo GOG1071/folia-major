@@ -1,4 +1,4 @@
-import type { AmllDbPlatform, LyricProviderSource, SongResult } from '../../types';
+import type { LyricProviderSource, SongResult } from '../../types';
 import { getLyricProviderLabel } from './lyricSourceLabels';
 import { getProviderSongMetadata } from '../../services/onlineMusic/songMetadata';
 
@@ -7,10 +7,7 @@ import { getProviderSongMetadata } from '../../services/onlineMusic/songMetadata
 
 export type LyricMatchSource = LyricProviderSource;
 
-export const getLyricMatchSourceLabel = (
-    source: LyricMatchSource,
-    platform?: AmllDbPlatform | null,
-): string => getLyricProviderLabel(source, platform);
+export const getLyricMatchSourceLabel = (source: LyricMatchSource): string => getLyricProviderLabel(source);
 
 export const getMatchResultArtists = (result: SongResult | null | undefined): string => {
     return result ? getProviderSongMetadata(result).artists.map(artist => artist.name).filter(Boolean).join(', ') : '';
@@ -33,7 +30,7 @@ export const getMatchResultCoverUrl = (
     source: LyricMatchSource,
 ): string | null => {
     if (!result) return null;
-    const coverUrl = getProviderSongMetadata(result, source === 'amll' ? undefined : source).coverUrl;
+    const coverUrl = getProviderSongMetadata(result, source).coverUrl;
     return coverUrl ? coverUrl.replace('http:', 'https:') : null;
 };
 
